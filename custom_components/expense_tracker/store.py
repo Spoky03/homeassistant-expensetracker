@@ -114,6 +114,7 @@ class ExpenseTrackerStore:
 
         self._data.setdefault("expenses", []).append(expense)
         await self._async_save()
+        await self.async_check_notifications(expense)
         return expense
 
     async def async_update_expense(
@@ -136,6 +137,7 @@ class ExpenseTrackerStore:
                             expense[key] = value
                 expense["updated_at"] = datetime.now(timezone.utc).isoformat()
                 await self._async_save()
+                await self.async_check_notifications(expense)
                 return expense
         return None
 
@@ -146,6 +148,7 @@ class ExpenseTrackerStore:
             if expense["id"] == expense_id and expense["user_id"] == user_id:
                 expenses.pop(i)
                 await self._async_save()
+                await self.async_check_notifications()
                 return True
         return False
 
@@ -253,8 +256,8 @@ class ExpenseTrackerStore:
                     "percentage": round((spent / budget_amount) * 100, 1) if budget_amount > 0 else 0,
                 }
 
-        # Calculate household balances & settlements
-        all_expenses = self.get_expenses(user_id=None, month=month, include_shared=True)
+        # Calculate household balances & settlements (all-time)
+        all_expenses = self.get_expenses(user_id=None, month=None, include_shared=True)
         users = self._data.get("users", {})
         user_ids = list(users.keys())
         balances = {uid: 0.0 for uid in user_ids}
@@ -430,6 +433,83 @@ class ExpenseTrackerStore:
     def get_user_name(self, user_id: str) -> str:
         """Return user display name."""
         return self._data.get("users", {}).get(user_id, {}).get("name", "Unknown")
+
+    async def async_check_notifications(self, expense: dict[str, Any] | None = None) -> None:
+        """Check and notify for large expenses, budget alerts, and high debts."""
+        if expense:
+            amount = expense.get("amount", 0.0)
+            is_shared = expense.get("is_shared", False)
+            payer_name = expense.get("user_name", "Someone")
+            desc = expense.get("description") or expense.get("category", "")
+
+            # 1. Large Shared Expense Notification (>= 50)
+            if is_shared and amount >= 50.0:
+                await self.hass.services.async_call(
+                    "persistent_notification",
+                    "create",
+                    {
+                        "title": "Large Shared Expense",
+                        "message": f"{payer_name} logged a large shared expense: {amount} {self.currency} for '{desc}'",
+                        "notification_id": f"expense_tracker_large_{expense['id']}",
+                    }
+                )
+
+            # 2. Budget Alert (>= 80% or 100%)
+            payer_id = expense.get("user_id")
+            category = expense.get("category")
+            if payer_id and category and category != "Settlement":
+                summary = self.get_monthly_summary(user_id=payer_id)
+                budget_data = summary.get("budgets", {}).get(category)
+                if budget_data:
+                    percentage = budget_data.get("percentage", 0.0)
+                    spent = budget_data.get("spent", 0.0)
+                    budget = budget_data.get("budget", 0.0)
+
+                    if percentage >= 100.0:
+                        await self.hass.services.async_call(
+                            "persistent_notification",
+                            "create",
+                            {
+                                "title": "Budget Exceeded",
+                                "message": f"You have exceeded 100% of your '{category}' budget! Spent: {spent} / {budget} {self.currency}",
+                                "notification_id": f"expense_tracker_budget_{payer_id}_{category}",
+                            }
+                        )
+                    elif percentage >= 80.0:
+                        await self.hass.services.async_call(
+                            "persistent_notification",
+                            "create",
+                            {
+                                "title": "Budget Alert",
+                                "message": f"You have used {round(percentage)}% of your '{category}' budget! Spent: {spent} / {budget} {self.currency}",
+                                "notification_id": f"expense_tracker_budget_{payer_id}_{category}",
+                            }
+                        )
+
+        # 3. Debt Threshold Notification (owing >= 100)
+        summary = self.get_monthly_summary()
+        balances = summary.get("balances", {})
+        for uid, bal in balances.items():
+            if bal <= -100.0:
+                user_name = self.get_user_name(uid)
+                await self.hass.services.async_call(
+                    "persistent_notification",
+                    "create",
+                    {
+                        "title": "Outstanding Debt Alert",
+                        "message": f"{user_name} owes {-bal} {self.currency} in total shared expenses. Please settle up.",
+                        "notification_id": f"expense_tracker_debt_{uid}",
+                    }
+                )
+            else:
+                # Dismiss notification if the user is now below the threshold
+                await self.hass.services.async_call(
+                    "persistent_notification",
+                    "dismiss",
+                    {
+                        "notification_id": f"expense_tracker_debt_{uid}",
+                    }
+                )
 
     # ──────────────────────────────────────────────
     # Internal persistence

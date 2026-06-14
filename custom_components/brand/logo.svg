@@ -1,0 +1,26 @@
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="purpleBlueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3c85ff" />
+      <stop offset="100%" stop-color="#00173fff" />
+    </linearGradient>
+    
+    <clipPath id="houseClip">
+      <path d="M240 224.762C240 233.012 233.25 239.762 225 239.762H15C6.75 239.762 0 233.012 0 224.762V134.762C0 126.512 4.77 114.993 10.61 109.153L109.39 10.3725C115.22 4.5425 124.77 4.5425 130.6 10.3725L229.39 109.162C235.22 114.992 240 126.522 240 134.772V224.772V224.762Z"/>
+    </clipPath>
+  </defs>
+
+  <path d="M240 224.762C240 233.012 233.25 239.762 225 239.762H15C6.75 239.762 0 233.012 0 224.762V134.762C0 126.512 4.77 114.993 10.61 109.153L109.39 10.3725C115.22 4.5425 124.77 4.5425 130.6 10.3725L229.39 109.162C235.22 114.992 240 126.522 240 134.772V224.772V224.762Z" fill="#F2F4F9"/>
+
+  <rect x="52" y="180" width="32" height="60" rx="4" fill="url(#purpleBlueGradient)" opacity="0.25" />
+  <rect x="104" y="150" width="32" height="90" rx="4" fill="url(#purpleBlueGradient)" opacity="0.55" />
+  <rect x="156" y="100" width="32" height="140" rx="4" fill="url(#purpleBlueGradient)" opacity="0.85" />
+
+  <path d="M 68 180 L 120 150 L 172 100" fill="none" stroke="url(#purpleBlueGradient)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <circle cx="68" cy="180" r="9" fill="#F2F4F9" stroke="url(#purpleBlueGradient)" stroke-width="8"/>
+  <circle cx="120" cy="150" r="9" fill="#F2F4F9" stroke="url(#purpleBlueGradient)" stroke-width="8"/>
+  <circle cx="172" cy="100" r="9" fill="#F2F4F9" stroke="url(#purpleBlueGradient)" stroke-width="8"/>
+
+  <path d="M240 224.762C240 233.012 233.25 239.762 225 239.762H15C6.75 239.762 0 233.012 0 224.762V134.762C0 126.512 4.77 114.993 10.61 109.153L109.39 10.3725C115.22 4.5425 124.77 4.5425 130.6 10.3725L229.39 109.162C235.22 114.992 240 126.522 240 134.772V224.772V224.762Z" fill="none" stroke="url(#purpleBlueGradient)" stroke-width="44" stroke-linejoin="round" clip-path="url(#houseClip)"/>
+</svg>

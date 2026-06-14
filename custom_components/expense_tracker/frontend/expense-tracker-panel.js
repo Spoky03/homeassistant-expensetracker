@@ -142,32 +142,22 @@ class ExpenseTrackerPanel extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    if (this._unsubEvents) {
-      this._unsubEvents();
-      this._unsubEvents = null;
-    }
   }
 
   updated(changedProperties) {
     super.updated(changedProperties);
-    if (changedProperties.has("hass") && this.hass && !this._initLoaded) {
-      this._initLoaded = true;
-      this._loadAll();
-      this._subscribeToEvents();
-    }
-  }
-
-  async _subscribeToEvents() {
-    if (this._unsubEvents) return;
-    try {
-      this._unsubEvents = await this.hass.connection.subscribeEvents(
-        (event) => {
+    if (changedProperties.has("hass") && this.hass) {
+      if (!this._initLoaded) {
+        this._initLoaded = true;
+        this._loadAll();
+      } else {
+        const oldHass = changedProperties.get("hass");
+        const oldState = oldHass?.states?.["sensor.expense_tracker_monthly_total"]?.state;
+        const newState = this.hass?.states?.["sensor.expense_tracker_monthly_total"]?.state;
+        if (oldState !== newState && newState !== undefined) {
           this._loadAll();
-        },
-        "expense_tracker_expense_changed"
-      );
-    } catch (e) {
-      console.error("Failed to subscribe to expense tracker events:", e);
+        }
+      }
     }
   }
 
@@ -711,7 +701,7 @@ class ExpenseTrackerPanel extends LitElement {
             : html`
                 <div style="display: flex; align-items: center; gap: 8px; color: var(--success, #10b981); font-weight: 600;">
                   <ha-icon icon="mdi:check-circle-outline"></ha-icon>
-                  <span>All settled up for this month!</span>
+                  <span>All settled up!</span>
                 </div>
               `}
         </div>
@@ -1144,7 +1134,7 @@ class ExpenseTrackerPanel extends LitElement {
         padding: 12px;
         border: none;
         border-radius: var(--radius-sm);
-        background: linear-gradient(135deg, var(--accent), #a855f7);
+        background: var(--primary-color);
         color: #fff;
         cursor: pointer;
         font-size: 14px;
@@ -1156,7 +1146,7 @@ class ExpenseTrackerPanel extends LitElement {
 
       .fab:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
       }
 
       .fab ha-icon { --mdc-icon-size: 20px; }
@@ -1288,7 +1278,7 @@ class ExpenseTrackerPanel extends LitElement {
         color: #fff;
       }
 
-      .gradient-1 { background: linear-gradient(135deg, #6366f1, #a855f7); }
+      .gradient-1 { background: var(--primary-color); }
       .gradient-2 { background: linear-gradient(135deg, #3b82f6, #06b6d4); }
       .gradient-3 { background: linear-gradient(135deg, #f97316, #eab308); }
       .gradient-4 { background: linear-gradient(135deg, #22c55e, #06b6d4); }
@@ -1550,7 +1540,7 @@ class ExpenseTrackerPanel extends LitElement {
         width: 44px;
         height: 44px;
         border-radius: 14px;
-        background: linear-gradient(135deg, var(--accent), #a855f7);
+        background: var(--primary-color);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1842,7 +1832,7 @@ class ExpenseTrackerPanel extends LitElement {
         padding: 10px 20px;
         border: none;
         border-radius: var(--radius-sm);
-        background: linear-gradient(135deg, var(--accent), #a855f7);
+        background: var(--primary-color);
         color: #fff;
         font-size: 14px;
         font-weight: 600;
@@ -1853,7 +1843,7 @@ class ExpenseTrackerPanel extends LitElement {
 
       .primary-btn:hover {
         transform: translateY(-1px);
-        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
       }
 
       .primary-btn ha-icon { --mdc-icon-size: 18px; }

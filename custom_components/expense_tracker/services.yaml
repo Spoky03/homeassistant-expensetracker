@@ -1,0 +1,62 @@
+add_expense:
+  name: "Add Expense"
+  description: "Log a new expense (cost) to the database."
+  fields:
+    amount:
+      name: "Amount"
+      description: "The amount spent (e.g. 15.50)."
+      required: true
+      selector:
+        number:
+          min: 0.01
+          step: 0.01
+    category:
+      name: "Category"
+      description: "The spending category (e.g. Food, Transport, Utilities)."
+      required: true
+      selector:
+        text:
+    user_id:
+      name: "User ID"
+      description: "Optional Home Assistant user ID of the payer. If omitted, defaults to the automation system."
+      required: false
+      selector:
+        text:
+    description:
+      name: "Description"
+      description: "An optional short description of the expense."
+      required: false
+      selector:
+        text:
+    is_shared:
+      name: "Shared"
+      description: "Toggle if this expense should be shared across household users."
+      required: false
+      default: true
+      selector:
+        boolean:
+
+settle_debt:
+  name: "Settle Debt"
+  description: "Record a direct cash repayment between two users."
+  fields:
+    from_user_id:
+      name: "Payer User ID"
+      description: "The Home Assistant user ID of the person paying (the debtor)."
+      required: true
+      selector:
+        text:
+    to_user_id:
+      name: "Recipient User ID"
+      description: "The Home Assistant user ID of the person receiving the money (the creditor)."
+      required: true
+      selector:
+        text:
+    amount:
+      name: "Amount"
+      description: "The amount of the settlement repayment."
+      required: true
+      selector:
+        number:
+          min: 0.01
+          step: 0.01
