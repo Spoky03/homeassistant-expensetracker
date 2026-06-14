@@ -8,38 +8,32 @@
  *
  * Usage:
  *   this._notifier = createNotifier();
- *   this._notifier.show((v) => { this._notification = v; }, "expense_added", "success", this._t);
+ *   this._notifier.show(
+ *     (v) => { this._notification = v; },
+ *     "expense_added",
+ *     "success",
+ *     this._t,
+ *   );
  *   // in disconnectedCallback:
  *   this._notifier.dispose();
  */
-
 export const createNotifier = () => {
-  let timer = null;
-
-  const clear = () => {
-    if (timer != null) {
-      clearTimeout(timer);
-      timer = null;
-    }
-  };
-
-  return {
-    /**
-     * Show a localised toast.
-     * @param {(v: object|null) => void} setter - updates the reactive prop
-     * @param {string} key - translation key
-     * @param {"info"|"success"|"error"} type
-     * @param {(k: string) => string} t - translation function
-     * @param {number} durationMs - hide after this many ms
-     */
-    show(setter, key, type = "info", t, durationMs = 3000) {
-      clear();
-      setter({ message: t(key), type });
-      timer = setTimeout(() => {
-        setter(null);
-        timer = null;
-      }, durationMs);
-    },
-    dispose: clear,
-  };
+    let timer = null;
+    const clear = () => {
+        if (timer != null) {
+            clearTimeout(timer);
+            timer = null;
+        }
+    };
+    return {
+        show(setter, key, type = "info", t, durationMs = 3000) {
+            clear();
+            setter({ message: t(key), type });
+            timer = setTimeout(() => {
+                setter(null);
+                timer = null;
+            }, durationMs);
+        },
+        dispose: clear,
+    };
 };

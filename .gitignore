@@ -3,3 +3,10 @@ __pycache__/
 *.pyo
 .DS_Store
 config/
+.cursor/
+
+# TypeScript
+node_modules/
+*.tsbuildinfo
+custom_components/expense_tracker/frontend/**/*.d.ts
+custom_components/expense_tracker/frontend/**/*.tsbuildinfo
