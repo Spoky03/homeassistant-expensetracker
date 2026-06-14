@@ -327,14 +327,14 @@ class ExpenseTrackerPanel extends LitElement {
 
   // ─── UI helpers ──────────────────────────────────
 
-  private _notify(key: string, type: NotificationType = "info"): void {
+  private _notify(key: TranslationKey, type: NotificationType = "info"): void {
     this._notifier.show(
       (v) => {
         this._notification = v;
       },
       key,
       type,
-      this._t
+      (k) => this._t(k as TranslationKey)
     );
   }
 
