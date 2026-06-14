@@ -206,7 +206,7 @@ class ExpenseTrackerPanel extends LitElement {
       this._notify("notify_invalid_amount", "error");
       return;
     }
-    const res = await this._ws<{ success?: boolean }>(
+    const res = await this._ws<{ expense: Expense }>(
       "expense_tracker/expenses/add",
       {
         amount: Number(amount),
