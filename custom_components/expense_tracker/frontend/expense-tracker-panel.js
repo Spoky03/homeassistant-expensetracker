@@ -116,6 +116,8 @@ class ExpenseTrackerPanel extends LitElement {
     this._showAddForm = false;
     this._formData = this._defaultFormData();
     this._notification = null;
+    this._initLoaded = false;
+    this._unsubEvents = null;
   }
 
   _defaultFormData() {
@@ -130,7 +132,37 @@ class ExpenseTrackerPanel extends LitElement {
 
   async connectedCallback() {
     super.connectedCallback();
-    await this._loadAll();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._unsubEvents) {
+      this._unsubEvents();
+      this._unsubEvents = null;
+    }
+  }
+
+  updated(changedProperties) {
+    super.updated(changedProperties);
+    if (changedProperties.has("hass") && this.hass && !this._initLoaded) {
+      this._initLoaded = true;
+      this._loadAll();
+      this._subscribeToEvents();
+    }
+  }
+
+  async _subscribeToEvents() {
+    if (this._unsubEvents) return;
+    try {
+      this._unsubEvents = await this.hass.connection.subscribeEvents(
+        (event) => {
+          this._loadAll();
+        },
+        "expense_tracker_expense_changed"
+      );
+    } catch (e) {
+      console.error("Failed to subscribe to expense tracker events:", e);
+    }
   }
 
   async _ws(type, params = {}) {
