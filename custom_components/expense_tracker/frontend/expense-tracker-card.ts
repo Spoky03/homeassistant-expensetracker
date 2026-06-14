@@ -10,11 +10,11 @@ import {
   categoryKey,
   type TranslationFn,
 } from "./shared/i18n.js";
+import type { HomeAssistant } from "custom-card-helpers";
 import type {
-  Hass,
   Summary,
   Settlement,
-} from "../../../types/hass.js";
+} from "../../../types/expense-tracker";
 
 interface FormData {
   amount: string;
@@ -54,7 +54,7 @@ class ExpenseTrackerCard extends LitElement {
     };
   }
 
-  hass: Hass | null = null;
+  hass: HomeAssistant | null = null;
   private _config!: CardConfig;
   private _summary: Summary | null = null;
   private _loading = true;
@@ -94,7 +94,9 @@ class ExpenseTrackerCard extends LitElement {
         this._initLoaded = true;
         this._loadAll();
       } else {
-        const oldHass = changedProperties.get("hass") as Hass | undefined;
+        const oldHass = changedProperties.get("hass") as
+          | HomeAssistant
+          | undefined;
         const oldState =
           oldHass?.states?.["sensor.expense_tracker_monthly_total"]?.state;
         const newState =

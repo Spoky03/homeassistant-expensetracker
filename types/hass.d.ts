@@ -1,138 +1,84 @@
 /**
- * Ambient type declarations for the Home Assistant APIs the expense tracker
- * frontend uses. This is intentionally minimal — we only describe what the
- * panel and card actually call, so we don't drift from HA's real surface
- * and pull in a heavyweight type package.
+ * Home Assistant type re-exports.
+ *
+ * We don't redefine HA's `HomeAssistant`, `HassEntity`, etc. here — we re-export
+ * the canonical versions from the community-maintained `custom-card-helpers`
+ * package (which in turn pulls from `home-assistant-js-websocket`, the same
+ * source the official HA frontend uses).
+ *
+ * Why:
+ *   - Single source of truth: when HA's frontend renames or restructures a
+ *     field, our types follow automatically on the next `npm install`.
+ *   - No drift between this integration and HA's actual runtime shape.
+ *   - Types are erased at compile time, so adding this devDep adds zero
+ *     runtime cost to the panel/card shipped to users.
+ *
+ * This is a `.d.ts` (not `.ts`) on purpose: it contains only `export type`
+ * declarations, so there's no runtime emit, and import resolution stays
+ * clean (consumers `import type { HomeAssistant } from ".../types/hass.js"`
+ * and tsc finds this file without producing a stray `hass.js` artifact).
+ *
+ * For our own websocket payload shapes (Expense, Summary, ConfigResponse,
+ * Settlement, BudgetProgress, etc.) see `./expense-tracker.ts`.
  */
 
-export interface HassEntity {
-  state: string;
-  attributes: Record<string, unknown>;
-  last_changed?: string;
-  last_updated?: string;
-  context?: { id: string; user_id?: string; parent_id?: string };
+export type {
+  HomeAssistant,
+  // Card-specific: HA's custom-card convention, useful if we ever subclass.
+  LovelaceCard,
+  LovelaceCardConfig,
+  // Useful to reach for when typing fixtures/tests.
+  FrontendLocaleData,
+  Theme,
+  Themes,
+  Panel,
+  Panels,
+  CurrentUser,
+  Resources,
+  LocalizeFunc,
+} from "custom-card-helpers";
+
+// `Hass*` types come from the websocket package, which is what the official
+// HA frontend itself imports them from. We re-export them here so consumers
+// only need to import from this one file.
+export type {
+  HassEntity,
+  HassConfig,
+  HassServiceTarget,
+  HassServices,
+  Connection,
+  MessageBase,
+  HassEvent,
+  Context,
+} from "home-assistant-js-websocket";
+
+// Panel-specific types (from the official HA frontend repo, not packaged in
+// any npm module). Copied verbatim from
+// https://github.com/home-assistant/frontend/blob/dev/src/types.ts
+// Re-sync by hand when bumping the integration against a new HA version.
+export interface PanelInfo<T = Record<string, unknown> | null> {
+  component_name: string;
+  config: T;
+  icon: string | null;
+  title: string | null;
+  url_path: string;
+  config_panel_domain?: string;
+  default_visible?: boolean;
+  require_admin?: boolean;
+  show_in_sidebar?: boolean;
 }
 
-export interface HassUser {
-  id: string;
-  name: string;
-  is_admin?: boolean;
-  is_owner?: boolean;
+export interface Route {
+  prefix: string;
+  path: string;
 }
 
-export interface HassLocale {
-  language: string;
-  // Many more fields exist; we only need language.
-  [key: string]: unknown;
-}
-
-/**
- * Subset of the `hass` global that the panel and card touch.
- * The full HA type is much larger; extending it is fine when the real one
- * becomes importable.
- */
-export interface Hass {
-  connection: {
-    sendMessagePromise<T = unknown>(message: object): Promise<T>;
-  };
-  callWS<T = unknown>(message: object): Promise<T>;
-  callService(
-    domain: string,
-    service: string,
-    data?: Record<string, unknown>
-  ): Promise<void>;
-  states: Record<string, HassEntity | undefined>;
-  locale?: HassLocale;
-  language?: string;
-  user?: HassUser;
-  config?: {
-    currency?: string;
-  };
-  panels?: Record<string, unknown>;
-}
-
-// ─── Websocket payloads (frontend view) ───────────────────────────────
-
-export interface Expense {
-  id: string;
-  user_id?: string;
-  user_name?: string;
-  amount: number;
-  currency?: string;
-  category: string;
-  description?: string;
-  date: string;
-  created_at?: string;
-  is_shared: boolean;
-  tags?: string[];
-}
-
-export interface ExpenseListResponse {
-  expenses: Expense[];
-}
-
-export interface CategoryListResponse {
-  categories: string[];
-}
-
-export interface BudgetsResponse {
-  budgets: Record<string, number>;
-}
-
-export interface BudgetProgress {
-  spent: number;
-  budget: number;
-  remaining: number;
-  percentage: number;
-}
-
-export interface Settlement {
-  from_id: string;
-  from_name: string;
-  to_id: string;
-  to_name: string;
-  amount: number;
-}
-
-export interface Summary {
-  total: number;
-  expense_count: number;
-  top_category: string | null;
-  by_category: Record<string, number>;
-  by_user: Record<string, { name: string; total: number; count: number }>;
-  balances: Record<string, number>;
-  settlements: Settlement[];
-  budgets: Record<string, BudgetProgress>;
-  currency?: string;
-}
-
-export interface ConfigResponse {
-  user_id: string;
-  user_name: string;
-  currency: string;
-  currency_symbol: string;
-}
-
-// ─── Custom element declarations ──────────────────────────────────────
-//
-// These tell TypeScript that <ha-card>, <ha-icon>, etc. exist as DOM
-// elements with the given attribute/property API.
-
+// Custom-element declarations used in the panel/card templates.
 declare global {
   interface HTMLElementTagNameMap {
     "ha-card": HTMLElement & { header?: string };
     "ha-icon": HTMLElement & { icon?: string };
+    "ha-panel-lovelace": HTMLElement;
+    "hui-view": HTMLElement;
   }
 }
-
-// Minimal LitElement surface used by shared/lit.ts when HA doesn't expose
-// one. The full type is in `lit`; we declare it locally so we don't add a
-// runtime dependency on @lit/reactive-element.
-export interface LitLikeElement {
-  new (...args: any[]): HTMLElement;
-  // Static side
-  readonly properties?: Record<string, unknown>;
-  readonly styles?: unknown;
-}
-
-export {};

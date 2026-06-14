@@ -27,13 +27,14 @@ import {
   type NotificationState,
   type NotificationType,
 } from "./shared/notifications.js";
+import type { HomeAssistant, PanelInfo } from "../../../types/hass";
 import type {
-  Hass,
   Expense,
   Summary,
   ConfigResponse,
   Settlement,
-} from "../../../types/hass.js";
+  Budgets,
+} from "../../../types/expense-tracker";
 
 interface FormData {
   amount: string;
@@ -66,15 +67,15 @@ class ExpenseTrackerPanel extends LitElement {
     };
   }
 
-  hass: Hass | null = null;
+  hass: HomeAssistant | null = null;
   narrow: boolean = false;
-  panel: object | null = null;
+  panel: PanelInfo | null = null;
   private _view: ViewName = "dashboard";
   private _config: Partial<ConfigResponse> = {};
   private _summary: Summary | null = null;
   private _expenses: Expense[] = [];
   private _categories: string[] = [];
-  private _budgets: Record<string, number> = {};
+  private _budgets: Budgets = {};
   private _currentMonth: string = getCurrentMonth();
   private _loading = true;
   private _editingExpense: Expense | null = null;
@@ -113,7 +114,9 @@ class ExpenseTrackerPanel extends LitElement {
         this._initLoaded = true;
         this._loadAll();
       } else {
-        const oldHass = changedProperties.get("hass") as Hass | undefined;
+        const oldHass = changedProperties.get("hass") as
+          | HomeAssistant
+          | undefined;
         const oldState =
           oldHass?.states?.["sensor.expense_tracker_monthly_total"]?.state;
         const newState =

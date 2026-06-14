@@ -10,7 +10,17 @@
  * a language switch is picked up on the next render.
  */
 
-import type { Hass } from "../../../../types/hass.js";
+import type { HomeAssistant } from "../../../../types/hass";
+
+/**
+ * The minimum surface `makeT` reads off a `hass` object.
+ *
+ * Using a narrow structural type (rather than `HomeAssistant` directly) keeps
+ * the unit tests and initialisation paths honest — `makeT(null)` and
+ * `makeT({ language: "pl" })` should type-check without forcing callers to
+ * fabricate a full `HomeAssistant` object.
+ */
+export type HassLike = Pick<Partial<HomeAssistant>, "language" | "locale">;
 
 const CATEGORY_KEYS: Record<string, string> = {
   Food: "cat_food",
@@ -256,7 +266,7 @@ export const categoryKey = (name: string): TranslationKey => {
  * Build a translation function bound to a `hass` instance.
  * Re-build whenever `hass` changes so a language switch takes effect.
  */
-export const makeT = (hass: Hass | null | undefined): TranslationFn => {
+export const makeT = (hass: HassLike | null | undefined): TranslationFn => {
   const lang: string =
     (
       hass?.locale?.language ||
