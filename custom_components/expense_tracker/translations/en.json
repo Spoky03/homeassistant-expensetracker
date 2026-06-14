@@ -1,0 +1,26 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Expense Tracker Setup",
+        "description": "Set up your household expense tracker.",
+        "data": {
+          "instance_name": "Instance name",
+          "currency": "Default currency",
+          "shared_tracking": "Enable shared expense tracking"
+        },
+        "data_description": {
+          "instance_name": "A friendly name for this expense tracker instance.",
+          "currency": "The default currency for all expenses.",
+          "shared_tracking": "Allow users to mark expenses as shared with the household."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Expense Tracker is already configured."
+    },
+    "error": {
+      "unknown": "An unexpected error occurred."
+    }
+  }
+}
