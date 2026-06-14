@@ -63,7 +63,7 @@ export const createNotifier = (): Notifier => {
       setter: NotificationSetter,
       key: string,
       type: NotificationType = "info",
-      t: (key: any) => string,
+      t: NotifierTranslator,
       durationMs = 3000
     ) {
       clear();
