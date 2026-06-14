@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+import time
 
 from homeassistant.components.frontend import async_register_built_in_panel
 from homeassistant.components.http import StaticPathConfig
@@ -22,6 +23,9 @@ from .websocket_api import async_register_websocket_commands
 _LOGGER = logging.getLogger(__name__)
 
 FRONTEND_URL_BASE = f"/api/{DOMAIN}/static"
+
+# Cache buster generated at startup time
+STARTUP_TIME = int(time.time())
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -85,8 +89,9 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
         config={
             "_panel_custom": {
                 "name": "expense-tracker-panel",
-                "module_url": f"{FRONTEND_URL_BASE}/expense-tracker-panel.js",
+                "module_url": f"{FRONTEND_URL_BASE}/expense-tracker-panel.js?v={STARTUP_TIME}",
             }
         },
         require_admin=False,
     )
+
