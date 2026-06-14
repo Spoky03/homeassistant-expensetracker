@@ -12,6 +12,7 @@ import {
 } from "./shared/i18n.js";
 import type { HomeAssistant } from "custom-card-helpers";
 import type {
+  Expense,
   Summary,
   Settlement,
 } from "../../../types/expense-tracker";
