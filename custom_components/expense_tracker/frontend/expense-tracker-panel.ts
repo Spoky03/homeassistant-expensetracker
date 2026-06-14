@@ -534,7 +534,7 @@ class ExpenseTrackerPanel extends LitElement {
               <span class="card-value"
                 >${formatCurrency(
                   (s.expense_count ?? 0) > 0
-                    ? total / new Date(this._currentMonth + "-15").getDate()
+                    ? total / new Date(Number(this._currentMonth.slice(0, 4)), Number(this._currentMonth.slice(5, 7)), 0).getDate()
                     : 0,
                   sym
                 )}</span
