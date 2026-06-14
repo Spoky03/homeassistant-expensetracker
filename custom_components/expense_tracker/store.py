@@ -214,8 +214,10 @@ class ExpenseTrackerStore:
         expense_count = 0
 
         for expense in expenses:
-            amount = expense.get("amount", 0.0)
             cat = expense.get("category", "Other")
+            if cat == "Settlement":
+                continue
+            amount = expense.get("amount", 0.0)
             uid = expense.get("user_id", "unknown")
             uname = expense.get("user_name", "Unknown")
 
@@ -251,6 +253,99 @@ class ExpenseTrackerStore:
                     "percentage": round((spent / budget_amount) * 100, 1) if budget_amount > 0 else 0,
                 }
 
+        # Calculate household balances & settlements
+        all_expenses = self.get_expenses(user_id=None, month=month, include_shared=True)
+        users = self._data.get("users", {})
+        user_ids = list(users.keys())
+        balances = {uid: 0.0 for uid in user_ids}
+
+        # Filter all_expenses for shared or settlement items
+        relevant_expenses = [
+            e for e in all_expenses
+            if e.get("is_shared") or e.get("category") == "Settlement"
+        ]
+
+        num_users = len(user_ids)
+        for expense in relevant_expenses:
+            amount = expense.get("amount", 0.0)
+            payer_id = expense.get("user_id")
+            if not payer_id or payer_id not in balances:
+                continue
+
+            if expense.get("category") == "Settlement":
+                # Find recipient in tags (format: "to:<user_id>")
+                recipient_id = None
+                for tag in expense.get("tags", []):
+                    if tag.startswith("to:"):
+                        recipient_id = tag[3:]
+                        break
+                if recipient_id and recipient_id in balances:
+                    balances[payer_id] += amount
+                    balances[recipient_id] -= amount
+            elif expense.get("is_shared") and num_users > 1:
+                share = amount / num_users
+                for uid in user_ids:
+                    if uid == payer_id:
+                        balances[uid] += amount - share
+                    else:
+                        balances[uid] -= share
+
+        # Round balances to 2 decimal places
+        balances = {uid: round(bal, 2) for uid, bal in balances.items()}
+
+        # Suggest optimal settlements (greedy cash flow)
+        debtors = []
+        creditors = []
+        for uid, bal in balances.items():
+            if bal < -0.01:
+                debtors.append({
+                    "id": uid,
+                    "name": users[uid].get("name", uid),
+                    "balance": bal
+                })
+            elif bal > 0.01:
+                creditors.append({
+                    "id": uid,
+                    "name": users[uid].get("name", uid),
+                    "balance": bal
+                })
+
+        debtors.sort(key=lambda x: x["balance"])
+        creditors.sort(key=lambda x: x["balance"], reverse=True)
+
+        debtors_calc = [dict(d) for d in debtors]
+        creditors_calc = [dict(c) for c in creditors]
+
+        settlements = []
+        d_idx = 0
+        c_idx = 0
+        while d_idx < len(debtors_calc) and c_idx < len(creditors_calc):
+            debtor = debtors_calc[d_idx]
+            creditor = creditors_calc[c_idx]
+
+            owe_amount = -debtor["balance"]
+            owed_amount = creditor["balance"]
+
+            transfer = min(owe_amount, owed_amount)
+            transfer = round(transfer, 2)
+
+            if transfer > 0.01:
+                settlements.append({
+                    "from_id": debtor["id"],
+                    "from_name": debtor["name"],
+                    "to_id": creditor["id"],
+                    "to_name": creditor["name"],
+                    "amount": transfer
+                })
+
+            debtor["balance"] += transfer
+            creditor["balance"] -= transfer
+
+            if round(debtor["balance"], 2) >= -0.01:
+                d_idx += 1
+            if round(creditor["balance"], 2) <= 0.01:
+                c_idx += 1
+
         return {
             "month": month,
             "total": total,
@@ -260,6 +355,8 @@ class ExpenseTrackerStore:
             "by_user": by_user,
             "top_category": top_category,
             "budgets": budgets,
+            "balances": balances,
+            "settlements": settlements,
         }
 
     def get_daily_total(self, user_id: str | None = None) -> float:
@@ -267,7 +364,11 @@ class ExpenseTrackerStore:
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         expenses = self.get_expenses(user_id=user_id)
         return round(
-            sum(e.get("amount", 0.0) for e in expenses if e.get("date") == today),
+            sum(
+                e.get("amount", 0.0)
+                for e in expenses
+                if e.get("date") == today and e.get("category") != "Settlement"
+            ),
             2,
         )
 

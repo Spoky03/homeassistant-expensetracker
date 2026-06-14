@@ -80,6 +80,7 @@ def ws_list_expenses(
         vol.Required("type"): "expense_tracker/expenses/add",
         vol.Required("amount"): vol.Coerce(float),
         vol.Required("category"): str,
+        vol.Optional("user_id"): str,
         vol.Optional("description", default=""): str,
         vol.Optional("date"): str,
         vol.Optional("is_shared", default=False): bool,
@@ -95,10 +96,12 @@ async def ws_add_expense(
     """Handle adding an expense."""
     store = _get_store(hass)
     user = connection.user
+    payer_id = msg.get("user_id") or user.id
+    payer_name = store.get_user_name(payer_id) if msg.get("user_id") else (user.name or "Unknown")
 
     expense = await store.async_add_expense(
-        user_id=user.id,
-        user_name=user.name or "Unknown",
+        user_id=payer_id,
+        user_name=payer_name,
         amount=msg["amount"],
         category=msg["category"],
         description=msg.get("description", ""),

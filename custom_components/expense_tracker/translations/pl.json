@@ -1,0 +1,26 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Konfiguracja Menedżera Wydatków",
+        "description": "Skonfiguruj swój domowy menedżer wydatków.",
+        "data": {
+          "instance_name": "Nazwa instancji",
+          "currency": "Domyślna waluta",
+          "shared_tracking": "Włącz wspólne śledzenie wydatków"
+        },
+        "data_description": {
+          "instance_name": "Przyjazna nazwa dla tej instancji menedżera wydatków.",
+          "currency": "Domyślna waluta dla wszystkich wydatków.",
+          "shared_tracking": "Zezwalaj użytkownikom na oznaczanie wydatków jako wspólne (dzielone z domownikami)."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Menedżer wydatków jest już skonfigurowany."
+    },
+    "error": {
+      "unknown": "Wystąpił nieoczekiwany błąd."
+    }
+  }
+}

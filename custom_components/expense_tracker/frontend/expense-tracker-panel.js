@@ -5,14 +5,20 @@
  *
  * Built with LitElement, styled to match HA themes.
  */
+const haLovelace = customElements.get("ha-panel-lovelace") ?? customElements.get("hui-view");
+let LitElement, html, css;
+const rawLit = haLovelace ? Object.getPrototypeOf(haLovelace) : null;
 
-const LitElement = Object.getPrototypeOf(
-  customElements.get("ha-panel-lovelace") ?? customElements.get("hui-view")
-);
-
-const html = LitElement?.prototype?.html ?? (await import("https://unpkg.com/lit@3/index.js?module")).html;
-const css = LitElement?.prototype?.css ?? (await import("https://unpkg.com/lit@3/index.js?module")).css;
-
+if (rawLit && rawLit.prototype?.html && rawLit.prototype?.css) {
+  LitElement = rawLit;
+  html = rawLit.prototype.html;
+  css = rawLit.prototype.css;
+} else {
+  const lit = await import("https://unpkg.com/lit@3/index.js?module");
+  LitElement = lit.LitElement;
+  html = lit.html;
+  css = lit.css;
+}
 // ─── Utility helpers ─────────────────────────────────
 
 function formatCurrency(amount, symbol = "€") {
@@ -126,7 +132,7 @@ class ExpenseTrackerPanel extends LitElement {
       category: "Food",
       description: "",
       date: new Date().toISOString().slice(0, 10),
-      is_shared: false,
+      is_shared: true,
     };
   }
 
@@ -514,6 +520,9 @@ class ExpenseTrackerPanel extends LitElement {
 
         <!-- Per-User Breakdown -->
         ${this._renderUserBreakdown(s, sym)}
+
+        <!-- Balances & Settlements -->
+        ${this._renderBalancesAndSettlements(s, sym)}
       </div>
     `;
   }
@@ -604,6 +613,107 @@ class ExpenseTrackerPanel extends LitElement {
               </div>
             `
           )}
+        </div>
+      </div>
+    `;
+  }
+
+  async _settleDebt(s) {
+    const sym = this._config.currency_symbol || "€";
+    const amount = s.amount;
+    const fromId = s.from_id;
+    const fromName = s.from_name;
+    const toId = s.to_id;
+    const toName = s.to_name;
+
+    const confirmed = confirm(`Record settlement: ${fromName} paid ${toName} ${sym}${amount}?`);
+    if (!confirmed) return;
+
+    this._loading = true;
+    const res = await this._ws("expense_tracker/expenses/add", {
+      amount: Number(amount),
+      category: "Settlement",
+      description: `Debt settlement to ${toName}`,
+      is_shared: false,
+      user_id: fromId,
+      tags: [`to:${toId}`]
+    });
+
+    if (res) {
+      this._showNotification("Debt settlement recorded successfully", "success");
+      await this._loadAll();
+    } else {
+      this._showNotification("Failed to record settlement", "error");
+    }
+    this._loading = false;
+  }
+
+  _renderBalancesAndSettlements(summary, sym) {
+    const balances = summary?.balances || {};
+    const settlements = summary?.settlements || [];
+    const byUser = summary?.by_user || {};
+    const entries = Object.entries(balances);
+    if (entries.length <= 1) return "";
+
+    return html`
+      <div class="glass-card" style="margin-top: 24px;">
+        <h2>Balances & Settlements</h2>
+        
+        <div class="balances-container">
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--text-secondary);">Current Balances</h3>
+          <div class="user-breakdown-grid">
+            ${entries.map(([uid, balance]) => {
+              const userName = byUser[uid]?.name || this._config.user_name || "Unknown";
+              const isOwed = balance > 0;
+              const isOwer = balance < 0;
+              return html`
+                <div class="user-card balance-card ${isOwed ? 'owed' : isOwer ? 'ower' : 'settled'}">
+                  <div class="user-avatar" style="background: ${isOwed ? 'linear-gradient(135deg, #10b981, #059669)' : isOwer ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #6b7280, #4b5563)'}">
+                    ${(userName || "?")[0].toUpperCase()}
+                  </div>
+                  <span class="user-name">${userName}</span>
+                  <span class="user-balance-value" style="font-size: 18px; font-weight: 800; color: ${isOwed ? 'var(--success, #10b981)' : isOwer ? 'var(--danger, #ef4444)' : 'var(--text-secondary)'}">
+                    ${isOwed ? "+" : ""}${formatCurrency(balance, sym)}
+                  </span>
+                  <span class="user-balance-status" style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: ${isOwed ? 'var(--success, #10b981)' : isOwer ? 'var(--danger, #ef4444)' : 'var(--text-secondary)'}">
+                    ${isOwed ? 'Is Owed' : isOwer ? 'Owes' : 'Settled'}
+                  </span>
+                </div>
+              `;
+            })}
+          </div>
+        </div>
+
+        <div class="settlements-container" style="margin-top: 24px;">
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--text-secondary);">Suggested Settlements</h3>
+          ${settlements.length > 0
+            ? html`
+                <div class="settlements-list" style="display: flex; flex-direction: column; gap: 12px;">
+                  ${settlements.map(
+                    (s) => html`
+                      <div class="settlement-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--panel-bg, rgba(255,255,255,0.05)); border: 1px solid var(--border); border-radius: 8px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                          <span style="font-weight: 600; color: var(--danger, #ef4444);">${s.from_name}</span>
+                          <ha-icon icon="mdi:arrow-right-thick" style="color: var(--text-secondary);"></ha-icon>
+                          <span style="font-weight: 600; color: var(--success, #10b981);">${s.to_name}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                          <span style="font-size: 16px; font-weight: 800;">${formatCurrency(s.amount, sym)}</span>
+                          <button class="primary-btn btn-sm" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;" @click=${() => this._settleDebt(s)}>
+                            Settle Debt
+                          </button>
+                        </div>
+                      </div>
+                    `
+                  )}
+                </div>
+              `
+            : html`
+                <div style="display: flex; align-items: center; gap: 8px; color: var(--success, #10b981); font-weight: 600;">
+                  <ha-icon icon="mdi:check-circle-outline"></ha-icon>
+                  <span>All settled up for this month!</span>
+                </div>
+              `}
         </div>
       </div>
     `;
@@ -1418,6 +1528,22 @@ class ExpenseTrackerPanel extends LitElement {
         background: var(--panel-bg);
         border-radius: var(--radius-sm);
         border: 1px solid var(--border);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .balance-card.owed {
+        border-color: rgba(34, 197, 94, 0.4);
+        background: linear-gradient(to bottom, var(--panel-bg), rgba(34, 197, 94, 0.03));
+      }
+
+      .balance-card.ower {
+        border-color: rgba(239, 68, 68, 0.4);
+        background: linear-gradient(to bottom, var(--panel-bg), rgba(239, 68, 68, 0.03));
+      }
+
+      .balance-card.settled {
+        border-color: var(--border);
+        opacity: 0.8;
       }
 
       .user-avatar {
@@ -2071,4 +2197,6 @@ class ExpenseTrackerPanel extends LitElement {
   }
 }
 
-customElements.define("expense-tracker-panel", ExpenseTrackerPanel);
+if (!customElements.get("expense-tracker-panel")) {
+  customElements.define("expense-tracker-panel", ExpenseTrackerPanel);
+}
