@@ -163,7 +163,7 @@ class ExpenseTrackerCard extends LitElement {
     }
 
     this._loading = true;
-    const res = await this.hass!.callWS<{ success?: boolean }>({
+    const res = await this.hass!.callWS<{ expense: Expense }>({
       type: "expense_tracker/expenses/add",
       amount: Number(amount),
       category,
