@@ -30,11 +30,137 @@ function getCurrentMonth() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function getMonthName(monthStr) {
+function getMonthName(monthStr, locale = "default") {
   const [y, m] = monthStr.split("-");
   const d = new Date(Number(y), Number(m) - 1);
-  return d.toLocaleString("default", { month: "long", year: "numeric" });
+  return d.toLocaleString(locale, { month: "long", year: "numeric" });
 }
+
+const TRANSLATIONS = {
+  pl: {
+    "Dashboard": "Pulpit",
+    "Expenses": "Wydatki",
+    "Budgets": "Budżety",
+    "Settings": "Ustawienia",
+    "Expense Tracker": "Menedżer Wydatków",
+    "Add Expense": "Dodaj Wydatek",
+    "Loading expenses...": "Ładowanie wydatków...",
+    "Total Spent": "Suma Wydatków",
+    "Transactions": "Transakcje",
+    "Top Category": "Główna Kategoria",
+    "none": "brak",
+    "Owes / Settlements": "Długi / Rozliczenia",
+    "Active Budgets": "Aktywne Budżety",
+    "Recent Expenses": "Ostatnie Wydatki",
+    "Category Breakdown": "Podział na Kategorie",
+    "No expenses logged this month": "Brak wydatków w tym miesiącu",
+    "No settlements needed!": "Wszystkie rozliczenia uregulowane!",
+    "pays": "płaci",
+    "to": "do",
+    "Spent": "Wydane",
+    "Budget": "Budżet",
+    "Remaining": "Pozostało",
+    "Manage": "Zarządzaj",
+    "Show All": "Pokaż Wszystkie",
+    "Amount": "Kwota",
+    "Description": "Opis",
+    "Date": "Data",
+    "Payer": "Płatnik",
+    "Shared": "Wspólny wydatek",
+    "Cancel": "Anuluj",
+    "Save Changes": "Zapisz Zmiany",
+    "Edit Expense": "Edytuj Wydatek",
+    "Confirm Delete": "Potwierdź Usunięcie",
+    "Are you sure you want to delete this expense?": "Czy na pewno chcesz usunąć ten wydatek?",
+    "Delete": "Usuń",
+    "Category": "Kategoria",
+    "Options": "Opcje",
+    "Actions": "Akcje",
+    "All": "Wszystkie",
+    "Shared Only": "Tylko Wspólne",
+    "Personal Only": "Tylko Osobiste",
+    "Set Budget": "Ustaw Budżet",
+    "Manage Budgets": "Zarządzaj Budżetami",
+    "Set Monthly Budget": "Ustaw Budżet Miesięczny",
+    "Save": "Zapisz",
+    "Category List": "Lista Kategorii",
+    "Global Categories": "Kategorie Globalne",
+    "Custom Categories": "Własne Kategorie",
+    "Add Custom Category": "Dodaj Własną Kategorię",
+    "Add Category": "Dodaj Kategorię",
+    "Integration Details": "Szczegóły Integracji",
+    "Instance Name": "Nazwa Instancji",
+    "Default Currency": "Domyślna Waluta",
+    "Shared Tracking": "Wspólne Śledzenie",
+    "enabled": "włączone",
+    "disabled": "wyłączone",
+    "Error communicating with server": "Błąd komunikacji z serwerem",
+    "Expense added successfully": "Pomyślnie dodano wydatek",
+    "Expense updated successfully": "Pomyślnie zaktualizowano wydatek",
+    "Expense deleted successfully": "Pomyślnie usunięto wydatek",
+    "Budget updated successfully": "Pomyślnie zaktualizowano budżet",
+    "Category added successfully": "Pomyślnie dodano kategorię",
+    "Category removed successfully": "Pomyślnie usunięto kategorię",
+    "Failed to delete expense": "Nie udało się usunąć wydatku",
+    "Failed to add category": "Nie udało się dodać kategorii",
+    "Failed to remove category": "Nie udało się usunąć kategorii",
+    "Settle": "Rozlicz",
+    "No active budgets set.": "Brak ustawionych aktywnych budżetów.",
+    "No expenses for": "Brak wydatków na",
+    "Filter by Category": "Filtruj wg Kategorii",
+    "Filter by Type": "Filtruj wg Typu",
+    "Search description...": "Szukaj opisu...",
+    "Reset Filters": "Resetuj Filtry",
+    "No expenses match your filters.": "Brak wydatków pasujących do filtrów.",
+    "Add one above!": "Dodaj nowy powyżej!",
+    "No expenses this month": "Brak wydatków w tym miesiącu",
+    "Default categories cannot be removed": "Kategorie domyślne nie mogą być usunięte",
+    "Confirm Category Removal": "Potwierdź Usunięcie Kategorii",
+    "Are you sure you want to remove the category": "Czy na pewno chcesz usunąć kategorię",
+    "This will NOT delete expenses in this category.": "To NIE usunie wydatków w tej kategorii.",
+    "Remove": "Usuń",
+    "Currency Symbol": "Symbol Waluty",
+    "User Spendings": "Wydatki Użytkowników",
+    "Daily Avg.": "Średnia dzienna",
+    "Is Owed": "Do odebrania",
+    "Owes": "Musi oddać",
+    "Settled": "Rozliczony",
+    "Debt settlement recorded successfully": "Pomyślnie zapisano rozliczenie długu",
+    "Failed to record settlement": "Nie udało się zapisać rozliczenia długu",
+    "Record settlement:": "Zapisz rozliczenie:",
+    "paid": "zapłacił(a)",
+    "What was this expense for?": "Na co był ten wydatek?",
+    "Add First Expense": "Dodaj pierwszy wydatek",
+    "No expenses. Add your first expense!": "Brak wydatków. Dodaj swój pierwszy wydatek!",
+    "Budget Progress": "Postęp budżetu",
+    "left": "zostało",
+    "over budget": "ponad budżet",
+    "Total": "Suma",
+    "Current Balances": "Bieżące salda",
+    "Default": "Domyślna",
+    "User": "Użytkownik",
+    "New category name...": "Nazwa nowej kategorii...",
+    "Add": "Dodaj",
+    "Food": "Żywność",
+    "Transport": "Transport",
+    "Utilities": "Opłaty",
+    "Entertainment": "Rozrywka",
+    "Health": "Zdrowie",
+    "Shopping": "Zakupy",
+    "Housing": "Mieszkanie",
+    "Other": "Inne",
+    "Settlement": "Rozliczenie",
+    "Please enter a valid amount": "Wpisz poprawną kwotę",
+    "Expense added!": "Dodano wydatek!",
+    "Expense updated!": "Zaktualizowano wydatek!",
+    "Expense deleted": "Usunięto wydatek",
+    "Budget saved!": "Zapisano budżet!",
+    "Category added!": "Dodano kategorię!",
+    "Category removed": "Usunięto kategorię",
+    "expense": "wydatek",
+    "expenses": "wydatki"
+  }
+};
 
 function getPreviousMonth(monthStr) {
   const [y, m] = monthStr.split("-");
@@ -134,6 +260,11 @@ class ExpenseTrackerPanel extends LitElement {
       date: new Date().toISOString().slice(0, 10),
       is_shared: true,
     };
+  }
+
+  _localize(key) {
+    const lang = (this.hass?.locale?.language || this.hass?.language || "en").split("-")[0];
+    return TRANSLATIONS[lang]?.[key] || key;
   }
 
   async connectedCallback() {
@@ -332,16 +463,16 @@ class ExpenseTrackerPanel extends LitElement {
 
   _renderNav() {
     const navItems = [
-      { id: "dashboard", icon: "mdi:view-dashboard", label: "Dashboard" },
-      { id: "expenses", icon: "mdi:format-list-bulleted", label: "Expenses" },
-      { id: "budgets", icon: "mdi:target", label: "Budgets" },
-      { id: "settings", icon: "mdi:cog", label: "Settings" },
+      { id: "dashboard", icon: "mdi:view-dashboard", label: this._localize("Dashboard") },
+      { id: "expenses", icon: "mdi:format-list-bulleted", label: this._localize("Expenses") },
+      { id: "budgets", icon: "mdi:target", label: this._localize("Budgets") },
+      { id: "settings", icon: "mdi:cog", label: this._localize("Settings") },
     ];
     return html`
       <nav class="panel-nav">
         <div class="nav-header">
           <ha-icon icon="mdi:wallet"></ha-icon>
-          <span class="nav-title">Expense Tracker</span>
+          <span class="nav-title">${this._localize("Expense Tracker")}</span>
         </div>
         <div class="nav-items">
           ${navItems.map(
@@ -358,7 +489,7 @@ class ExpenseTrackerPanel extends LitElement {
         </div>
         <button class="fab" @click=${() => { this._showAddForm = true; this._editingExpense = null; this._formData = this._defaultFormData(); }}>
           <ha-icon icon="mdi:plus"></ha-icon>
-          <span>Add Expense</span>
+          <span>${this._localize("Add Expense")}</span>
         </button>
       </nav>
     `;
@@ -368,7 +499,7 @@ class ExpenseTrackerPanel extends LitElement {
     return html`
       <div class="loader">
         <div class="spinner"></div>
-        <p>Loading expenses...</p>
+        <p>${this._localize("Loading expenses...")}</p>
       </div>
     `;
   }
@@ -377,7 +508,7 @@ class ExpenseTrackerPanel extends LitElement {
     return html`
       <div class="notification ${this._notification.type}">
         <ha-icon icon=${this._notification.type === "error" ? "mdi:alert-circle" : "mdi:check-circle"}></ha-icon>
-        <span>${this._notification.message}</span>
+        <span>${this._localize(this._notification.message)}</span>
       </div>
     `;
   }
@@ -412,12 +543,12 @@ class ExpenseTrackerPanel extends LitElement {
     return html`
       <div class="view-container">
         <div class="view-header">
-          <h1>Dashboard</h1>
+          <h1>${this._localize("Dashboard")}</h1>
           <div class="month-nav">
             <button class="icon-btn" @click=${() => this._changeMonth("prev")}>
               <ha-icon icon="mdi:chevron-left"></ha-icon>
             </button>
-            <span class="month-label">${getMonthName(this._currentMonth)}</span>
+            <span class="month-label">${getMonthName(this._currentMonth, this.hass?.locale?.language || this.hass?.language)}</span>
             <button class="icon-btn" @click=${() => this._changeMonth("next")}>
               <ha-icon icon="mdi:chevron-right"></ha-icon>
             </button>
@@ -431,7 +562,7 @@ class ExpenseTrackerPanel extends LitElement {
               <ha-icon icon="mdi:cash-multiple"></ha-icon>
             </div>
             <div class="card-info">
-              <span class="card-label">Total Spent</span>
+              <span class="card-label">${this._localize("Total Spent")}</span>
               <span class="card-value">${formatCurrency(total, sym)}</span>
             </div>
           </div>
@@ -440,7 +571,7 @@ class ExpenseTrackerPanel extends LitElement {
               <ha-icon icon="mdi:receipt-text"></ha-icon>
             </div>
             <div class="card-info">
-              <span class="card-label">Transactions</span>
+              <span class="card-label">${this._localize("Transactions")}</span>
               <span class="card-value">${s.expense_count || 0}</span>
             </div>
           </div>
@@ -449,8 +580,8 @@ class ExpenseTrackerPanel extends LitElement {
               <ha-icon icon="mdi:trophy"></ha-icon>
             </div>
             <div class="card-info">
-              <span class="card-label">Top Category</span>
-              <span class="card-value">${s.top_category || "—"}</span>
+              <span class="card-label">${this._localize("Top Category")}</span>
+              <span class="card-value">${s.top_category ? this._localize(s.top_category) : "—"}</span>
             </div>
           </div>
           <div class="summary-card">
@@ -458,7 +589,7 @@ class ExpenseTrackerPanel extends LitElement {
               <ha-icon icon="mdi:calculator-variant"></ha-icon>
             </div>
             <div class="card-info">
-              <span class="card-label">Daily Avg.</span>
+              <span class="card-label">${this._localize("Daily Avg.")}</span>
               <span class="card-value">${formatCurrency(
                 (s.expense_count || 0) > 0
                   ? total / new Date(this._currentMonth + "-15").getDate()
@@ -473,13 +604,13 @@ class ExpenseTrackerPanel extends LitElement {
         <div class="dashboard-grid">
           <!-- Category Donut Chart -->
           <div class="glass-card chart-card">
-            <h2>Spending by Category</h2>
-            ${categories.length > 0 ? this._renderDonutChart(categories, total, sym) : html`<p class="empty-state">No expenses this month</p>`}
+            <h2>${this._localize("Category Breakdown")}</h2>
+            ${categories.length > 0 ? this._renderDonutChart(categories, total, sym) : html`<p class="empty-state">${this._localize("No expenses this month")}</p>`}
           </div>
 
           <!-- Recent Expenses -->
           <div class="glass-card recent-card">
-            <h2>Recent Expenses</h2>
+            <h2>${this._localize("Recent Expenses")}</h2>
             ${this._expenses.length > 0
               ? html`
                   <div class="recent-list">
@@ -490,8 +621,8 @@ class ExpenseTrackerPanel extends LitElement {
                             <ha-icon icon=${getCategoryIcon(e.category)}></ha-icon>
                           </div>
                           <div class="recent-info">
-                            <span class="recent-desc">${e.description || e.category}</span>
-                            <span class="recent-meta">${e.date}${e.is_shared ? " · Shared" : ""}</span>
+                            <span class="recent-desc">${e.description || this._localize(e.category)}</span>
+                            <span class="recent-meta">${e.date}${e.is_shared ? ` · ${this._localize("Shared")}` : ""}</span>
                           </div>
                           <span class="recent-amount" style="color: ${getCategoryColor(e.category)}">
                             -${formatCurrency(e.amount, sym)}
@@ -501,7 +632,7 @@ class ExpenseTrackerPanel extends LitElement {
                     )}
                   </div>
                 `
-              : html`<p class="empty-state">No expenses yet. Add your first one!</p>`}
+              : html`<p class="empty-state">${this._localize("No expenses. Add your first expense!")}</p>`}
           </div>
         </div>
 
@@ -551,7 +682,7 @@ class ExpenseTrackerPanel extends LitElement {
               />
             `
           )}
-          <text x="${cx}" y="${cy - 8}" text-anchor="middle" class="donut-total-label">Total</text>
+          <text x="${cx}" y="${cy - 8}" text-anchor="middle" class="donut-total-label">${this._localize("Total")}</text>
           <text x="${cx}" y="${cy + 14}" text-anchor="middle" class="donut-total-value">${formatCurrency(total, sym)}</text>
         </svg>
         <div class="donut-legend">
@@ -559,7 +690,7 @@ class ExpenseTrackerPanel extends LitElement {
             ([cat, amount]) => html`
               <div class="legend-item">
                 <span class="legend-dot" style="background: ${getCategoryColor(cat)}"></span>
-                <span class="legend-label">${cat}</span>
+                <span class="legend-label">${this._localize(cat)}</span>
                 <span class="legend-value">${formatCurrency(amount, sym)}</span>
                 <span class="legend-pct">${total > 0 ? Math.round((amount / total) * 100) : 0}%</span>
               </div>
@@ -577,7 +708,7 @@ class ExpenseTrackerPanel extends LitElement {
 
     return html`
       <div class="glass-card">
-        <h2>Budget Progress</h2>
+        <h2>${this._localize("Budget Progress")}</h2>
         <div class="budget-bars">
           ${entries.map(
             ([cat, b]) => html`
@@ -585,7 +716,7 @@ class ExpenseTrackerPanel extends LitElement {
                 <div class="budget-bar-header">
                   <span class="budget-cat">
                     <ha-icon icon=${getCategoryIcon(cat)}></ha-icon>
-                    ${cat}
+                    ${this._localize(cat)}
                   </span>
                   <span class="budget-amounts">
                     ${formatCurrency(b.spent, sym)} / ${formatCurrency(b.budget, sym)}
@@ -598,7 +729,7 @@ class ExpenseTrackerPanel extends LitElement {
                   ></div>
                 </div>
                 <span class="budget-remaining ${b.remaining < 0 ? "negative" : ""}">
-                  ${b.remaining >= 0 ? `${formatCurrency(b.remaining, sym)} left` : `${formatCurrency(Math.abs(b.remaining), sym)} over budget`}
+                  ${b.remaining >= 0 ? html`${formatCurrency(b.remaining, sym)} ${this._localize("left")}` : html`${formatCurrency(Math.abs(b.remaining), sym)} ${this._localize("over budget")}`}
                 </span>
               </div>
             `
@@ -616,7 +747,7 @@ class ExpenseTrackerPanel extends LitElement {
     const toId = s.to_id;
     const toName = s.to_name;
 
-    const confirmed = confirm(`Record settlement: ${fromName} paid ${toName} ${sym}${amount}?`);
+    const confirmed = confirm(`${this._localize("Record settlement:")} ${fromName} ${this._localize("paid")} ${toName} ${sym}${amount}?`);
     if (!confirmed) return;
 
     this._loading = true;
@@ -647,10 +778,10 @@ class ExpenseTrackerPanel extends LitElement {
 
     return html`
       <div class="glass-card" style="margin-top: 24px;">
-        <h2>Balances & Settlements</h2>
+        <h2>${this._localize("Owes / Settlements")}</h2>
         
         <div class="balances-container">
-          <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--text-secondary);">Current Balances</h3>
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--text-secondary);">${this._localize("Current Balances")}</h3>
           <div class="user-breakdown-grid">
             ${entries.map(([uid, balance]) => {
               const userName = byUser[uid]?.name || this._config.user_name || "Unknown";
@@ -666,7 +797,7 @@ class ExpenseTrackerPanel extends LitElement {
                     ${isOwed ? "+" : ""}${formatCurrency(balance, sym)}
                   </span>
                   <span class="user-balance-status" style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: ${isOwed ? 'var(--success, #10b981)' : isOwer ? 'var(--danger, #ef4444)' : 'var(--text-secondary)'}">
-                    ${isOwed ? 'Is Owed' : isOwer ? 'Owes' : 'Settled'}
+                    ${isOwed ? this._localize("Is Owed") : isOwer ? this._localize("Owes") : this._localize("Settled")}
                   </span>
                 </div>
               `;
@@ -675,7 +806,7 @@ class ExpenseTrackerPanel extends LitElement {
         </div>
 
         <div class="settlements-container" style="margin-top: 24px;">
-          <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--text-secondary);">Suggested Settlements</h3>
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--text-secondary);">${this._localize("Suggested Settlements")}</h3>
           ${settlements.length > 0
             ? html`
                 <div class="settlements-list" style="display: flex; flex-direction: column; gap: 12px;">
@@ -690,7 +821,7 @@ class ExpenseTrackerPanel extends LitElement {
                         <div style="display: flex; align-items: center; gap: 16px;">
                           <span style="font-size: 16px; font-weight: 800;">${formatCurrency(s.amount, sym)}</span>
                           <button class="primary-btn btn-sm" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;" @click=${() => this._settleDebt(s)}>
-                            Settle Debt
+                            ${this._localize("Settle")}
                           </button>
                         </div>
                       </div>
@@ -701,7 +832,7 @@ class ExpenseTrackerPanel extends LitElement {
             : html`
                 <div style="display: flex; align-items: center; gap: 8px; color: var(--success, #10b981); font-weight: 600;">
                   <ha-icon icon="mdi:check-circle-outline"></ha-icon>
-                  <span>All settled up!</span>
+                  <span>${this._localize("No settlements needed!")}</span>
                 </div>
               `}
         </div>
@@ -716,7 +847,7 @@ class ExpenseTrackerPanel extends LitElement {
 
     return html`
       <div class="glass-card">
-        <h2>Per-Person Breakdown</h2>
+        <h2>${this._localize("User Spendings")}</h2>
         <div class="user-breakdown-grid">
           ${entries.map(
             ([, userData]) => html`
@@ -724,7 +855,7 @@ class ExpenseTrackerPanel extends LitElement {
                 <div class="user-avatar">${(userData.name || "?")[0].toUpperCase()}</div>
                 <span class="user-name">${userData.name}</span>
                 <span class="user-total">${formatCurrency(userData.total, sym)}</span>
-                <span class="user-count">${userData.count} expenses</span>
+                <span class="user-count">${userData.count} ${this._localize(userData.count === 1 ? "expense" : "expenses")}</span>
               </div>
             `
           )}
@@ -740,12 +871,12 @@ class ExpenseTrackerPanel extends LitElement {
     return html`
       <div class="view-container">
         <div class="view-header">
-          <h1>Expenses</h1>
+          <h1>${this._localize("Expenses")}</h1>
           <div class="month-nav">
             <button class="icon-btn" @click=${() => this._changeMonth("prev")}>
               <ha-icon icon="mdi:chevron-left"></ha-icon>
             </button>
-            <span class="month-label">${getMonthName(this._currentMonth)}</span>
+            <span class="month-label">${getMonthName(this._currentMonth, this.hass?.locale?.language || this.hass?.language)}</span>
             <button class="icon-btn" @click=${() => this._changeMonth("next")}>
               <ha-icon icon="mdi:chevron-right"></ha-icon>
             </button>
@@ -762,18 +893,18 @@ class ExpenseTrackerPanel extends LitElement {
                         <ha-icon icon=${getCategoryIcon(e.category)}></ha-icon>
                       </div>
                       <div class="expense-details">
-                        <span class="expense-desc">${e.description || e.category}</span>
+                        <span class="expense-desc">${e.description || this._localize(e.category)}</span>
                         <span class="expense-meta">
-                          ${e.category} · ${e.date} · ${e.user_name || "You"}
-                          ${e.is_shared ? html`<span class="shared-badge">Shared</span>` : ""}
+                          ${this._localize(e.category)} · ${e.date} · ${e.user_name || "You"}
+                          ${e.is_shared ? html`<span class="shared-badge">${this._localize("Shared")}</span>` : ""}
                         </span>
                       </div>
                       <span class="expense-amount">-${formatCurrency(e.amount, sym)}</span>
                       <div class="expense-actions">
-                        <button class="action-btn edit" @click=${() => this._startEdit(e)} title="Edit">
+                        <button class="action-btn edit" @click=${() => this._startEdit(e)} title="${this._localize("Edit")}">
                           <ha-icon icon="mdi:pencil"></ha-icon>
                         </button>
-                        <button class="action-btn delete" @click=${() => this._deleteExpense(e.id)} title="Delete">
+                        <button class="action-btn delete" @click=${() => this._deleteExpense(e.id)} title="${this._localize("Delete")}">
                           <ha-icon icon="mdi:delete"></ha-icon>
                         </button>
                       </div>
@@ -785,9 +916,9 @@ class ExpenseTrackerPanel extends LitElement {
           : html`
               <div class="glass-card empty-card">
                 <ha-icon icon="mdi:receipt-text-remove"></ha-icon>
-                <p>No expenses for ${getMonthName(this._currentMonth)}</p>
+                <p>${this._localize("No expenses for")} ${getMonthName(this._currentMonth, this.hass?.locale?.language || this.hass?.language)}</p>
                 <button class="primary-btn" @click=${() => { this._showAddForm = true; }}>
-                  Add First Expense
+                  ${this._localize("Add First Expense")}
                 </button>
               </div>
             `}
@@ -802,7 +933,7 @@ class ExpenseTrackerPanel extends LitElement {
     return html`
       <div class="view-container">
         <div class="view-header">
-          <h1>${isEditing ? "Edit Expense" : "Add Expense"}</h1>
+          <h1>${isEditing ? this._localize("Edit Expense") : this._localize("Add Expense")}</h1>
           <button class="icon-btn" @click=${() => { this._showAddForm = false; this._cancelEdit(); }}>
             <ha-icon icon="mdi:close"></ha-icon>
           </button>
@@ -810,7 +941,7 @@ class ExpenseTrackerPanel extends LitElement {
 
         <div class="glass-card form-card">
           <div class="form-group">
-            <label>Amount</label>
+            <label>${this._localize("Amount")}</label>
             <div class="amount-input-wrap">
               <span class="currency-prefix">${this._config.currency_symbol || "€"}</span>
               <input
@@ -827,7 +958,7 @@ class ExpenseTrackerPanel extends LitElement {
           </div>
 
           <div class="form-group">
-            <label>Category</label>
+            <label>${this._localize("Category")}</label>
             <div class="category-grid">
               ${this._categories.map(
                 (cat) => html`
@@ -837,7 +968,7 @@ class ExpenseTrackerPanel extends LitElement {
                     @click=${() => { this._formData = { ...this._formData, category: cat }; }}
                   >
                     <ha-icon icon=${getCategoryIcon(cat)}></ha-icon>
-                    <span>${cat}</span>
+                    <span>${this._localize(cat)}</span>
                   </button>
                 `
               )}
@@ -845,10 +976,10 @@ class ExpenseTrackerPanel extends LitElement {
           </div>
 
           <div class="form-group">
-            <label>Description</label>
+            <label>${this._localize("Description")}</label>
             <input
               type="text"
-              placeholder="What was this expense for?"
+              placeholder="${this._localize("What was this expense for?")}"
               .value=${this._formData.description}
               @input=${(e) => { this._formData = { ...this._formData, description: e.target.value }; }}
               class="text-input"
@@ -857,7 +988,7 @@ class ExpenseTrackerPanel extends LitElement {
 
           <div class="form-row">
             <div class="form-group flex-1">
-              <label>Date</label>
+              <label>${this._localize("Date")}</label>
               <input
                 type="date"
                 .value=${this._formData.date}
@@ -866,7 +997,7 @@ class ExpenseTrackerPanel extends LitElement {
               />
             </div>
             <div class="form-group">
-              <label>Shared</label>
+              <label>${this._localize("Shared")}</label>
               <label class="toggle-label">
                 <input
                   type="checkbox"
@@ -880,11 +1011,11 @@ class ExpenseTrackerPanel extends LitElement {
 
           <div class="form-actions">
             <button class="secondary-btn" @click=${() => { this._showAddForm = false; this._cancelEdit(); }}>
-              Cancel
+              ${this._localize("Cancel")}
             </button>
             <button class="primary-btn" @click=${isEditing ? () => this._updateExpense() : () => this._addExpense()}>
               <ha-icon icon=${isEditing ? "mdi:content-save" : "mdi:plus"}></ha-icon>
-              ${isEditing ? "Save Changes" : "Add Expense"}
+              ${isEditing ? this._localize("Save Changes") : this._localize("Add Expense")}
             </button>
           </div>
         </div>
@@ -901,11 +1032,11 @@ class ExpenseTrackerPanel extends LitElement {
     return html`
       <div class="view-container">
         <div class="view-header">
-          <h1>Monthly Budgets</h1>
+          <h1>${this._localize("Manage Budgets")}</h1>
         </div>
 
         <div class="glass-card">
-          <p class="budget-hint">Set monthly spending limits for each category. Set to 0 to remove a budget.</p>
+          <p class="budget-hint">${this._localize("Set monthly spending limits for each category. Set to 0 to remove a budget.")}</p>
           <div class="budget-list">
             ${this._categories.map((cat) => {
               const currentBudget = this._budgets[cat] || 0;
@@ -916,7 +1047,7 @@ class ExpenseTrackerPanel extends LitElement {
                     <div class="recent-icon" style="background: ${getCategoryColor(cat)}20; color: ${getCategoryColor(cat)}">
                       <ha-icon icon=${getCategoryIcon(cat)}></ha-icon>
                     </div>
-                    <span>${cat}</span>
+                    <span>${this._localize(cat)}</span>
                   </div>
                   <div class="budget-edit-input-wrap">
                     <span class="currency-prefix small">${sym}</span>
@@ -931,7 +1062,7 @@ class ExpenseTrackerPanel extends LitElement {
                     />
                   </div>
                   <span class="budget-edit-spent">
-                    Spent: ${formatCurrency(spent, sym)}
+                    ${this._localize("Spent")}: ${formatCurrency(spent, sym)}
                   </span>
                 </div>
               `;
@@ -948,32 +1079,32 @@ class ExpenseTrackerPanel extends LitElement {
     return html`
       <div class="view-container">
         <div class="view-header">
-          <h1>Settings</h1>
+          <h1>${this._localize("Settings")}</h1>
         </div>
 
         <div class="glass-card">
-          <h2>Your Information</h2>
+          <h2>${this._localize("Integration Details")}</h2>
           <div class="settings-info">
             <div class="settings-row">
-              <span class="settings-label">User</span>
+              <span class="settings-label">${this._localize("User")}</span>
               <span class="settings-value">${this._config.user_name || "Unknown"}</span>
             </div>
             <div class="settings-row">
-              <span class="settings-label">Currency</span>
+              <span class="settings-label">${this._localize("Default Currency")}</span>
               <span class="settings-value">${this._config.currency} (${this._config.currency_symbol})</span>
             </div>
           </div>
         </div>
 
         <div class="glass-card">
-          <h2>Custom Categories</h2>
-          <p class="budget-hint">Add custom categories on top of the defaults. Default categories cannot be removed.</p>
+          <h2>${this._localize("Custom Categories")}</h2>
+          <p class="budget-hint">${this._localize("Add custom categories on top of the defaults. Default categories cannot be removed.")}</p>
 
           <div class="add-category-form">
             <input
               type="text"
               id="new-category-input"
-              placeholder="New category name..."
+              placeholder="${this._localize("New category name...")}"
               class="text-input"
               @keydown=${(e) => {
                 if (e.key === "Enter") {
@@ -996,7 +1127,7 @@ class ExpenseTrackerPanel extends LitElement {
               }}
             >
               <ha-icon icon="mdi:plus"></ha-icon>
-              Add
+              ${this._localize("Add")}
             </button>
           </div>
 
@@ -1007,14 +1138,14 @@ class ExpenseTrackerPanel extends LitElement {
                   <div class="recent-icon" style="background: ${getCategoryColor(cat)}20; color: ${getCategoryColor(cat)}">
                     <ha-icon icon=${getCategoryIcon(cat)}></ha-icon>
                   </div>
-                  <span>${cat}</span>
+                  <span>${this._localize(cat)}</span>
                   ${!["Food", "Transport", "Utilities", "Entertainment", "Health", "Shopping", "Housing", "Other"].includes(cat)
                     ? html`
                         <button class="action-btn delete" @click=${() => this._removeCategory(cat)}>
                           <ha-icon icon="mdi:close"></ha-icon>
                         </button>
                       `
-                    : html`<span class="default-badge">Default</span>`}
+                    : html`<span class="default-badge">${this._localize("Default")}</span>`}
                 </div>
               `
             )}

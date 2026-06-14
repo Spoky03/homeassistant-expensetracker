@@ -18,6 +18,33 @@ if (rawLit && rawLit.prototype?.html && rawLit.prototype?.css) {
   css = lit.css;
 }
 
+const TRANSLATIONS = {
+  pl: {
+    "Loading...": "Ładowanie...",
+    "Expenses Balance": "Saldo Wydatków",
+    "No balances to display.": "Brak sald do wyświetlenia.",
+    "Suggested Settlements": "Sugerowane Rozliczenia",
+    "owes": "wisi",
+    "Settle": "Rozlicz",
+    "Quick Add Expense": "Szybkie Dodawanie Wydatku",
+    "Amount": "Kwota",
+    "Category": "Kategoria",
+    "Description": "Opis",
+    "Shared with Household": "Wspólny wydatek",
+    "Save": "Zapisz",
+    "Failed to add expense": "Nie udało się dodać wydatku",
+    "Please enter a valid amount": "Wpisz poprawną kwotę",
+    "Food": "Żywność",
+    "Transport": "Transport",
+    "Utilities": "Opłaty",
+    "Entertainment": "Rozrywka",
+    "Health": "Zdrowie",
+    "Shopping": "Zakupy",
+    "Housing": "Mieszkanie",
+    "Other": "Inne"
+  }
+};
+
 function formatCurrency(amount, symbol = "€") {
   return `${symbol}${Number(amount).toFixed(2)}`;
 }
@@ -58,91 +85,88 @@ class ExpenseTrackerCard extends LitElement {
     this._config = config;
   }
 
+  _localize(key) {
+    const lang = (this.hass?.locale?.language || this.hass?.language || "en").split("-")[0];
+    return TRANSLATIONS[lang]?.[key] || key;
+  }
+
   getCardSize() {
     return 3;
   }
 
-  set hass(hass) {
-    const oldHass = this._hass;
-    this._hass = hass;
+  connectedCallback() {
+    super.connectedCallback();
+    this._loadAll();
+  }
 
-    if (hass) {
-      if (!oldHass) {
+  updated(changedProperties) {
+    super.updated(changedProperties);
+    if (changedProperties.has("hass") && this.hass) {
+      const oldHass = changedProperties.get("hass");
+      const oldState = oldHass?.states?.["sensor.expense_tracker_monthly_total"]?.state;
+      const newState = this.hass?.states?.["sensor.expense_tracker_monthly_total"]?.state;
+      if (oldState !== newState && newState !== undefined) {
         this._loadAll();
-      } else {
-        const oldState = oldHass.states["sensor.expense_tracker_monthly_total"]?.state;
-        const newState = hass.states["sensor.expense_tracker_monthly_total"]?.state;
-        if (oldState !== newState && newState !== undefined) {
-          this._loadAll();
-        }
       }
-    }
-  }
-
-  get hass() {
-    return this._hass;
-  }
-
-  async _ws(type, params = {}) {
-    try {
-      return await this.hass.connection.sendMessagePromise({
-        type,
-        ...params,
-      });
-    } catch (e) {
-      console.error(`Card WS call ${type} failed:`, e);
-      return null;
     }
   }
 
   async _loadAll() {
     this._loading = true;
-    const [summary, categories] = await Promise.all([
-      this._ws("expense_tracker/summary"),
-      this._ws("expense_tracker/categories/list"),
-    ]);
-    if (summary) this._summary = summary;
-    if (categories) this._categories = categories.categories || [];
+    const store = this.hass?.states?.["sensor.expense_tracker_monthly_total"];
+    if (store) {
+      await Promise.all([
+        this._loadSummary(),
+        this._loadCategories(),
+      ]);
+    }
     this._loading = false;
   }
 
-  async _settleDebt(s) {
-    const sym = this._summary?.currency || "€";
-    const confirmed = confirm(`Record settlement: ${s.from_name} paid ${s.to_name} ${sym}${s.amount}?`);
-    if (!confirmed) return;
-
-    this._loading = true;
-    const res = await this._ws("expense_tracker/expenses/add", {
-      amount: Number(s.amount),
-      category: "Settlement",
-      description: `Debt settlement to ${s.to_name}`,
-      is_shared: false,
-      user_id: s.from_id,
-      tags: [`to:${s.to_id}`]
+  async _loadSummary() {
+    const res = await this.hass.callWS({
+      type: "expense_tracker/summary",
     });
+    if (res) this._summary = res;
+  }
 
-    if (res) {
+  async _loadCategories() {
+    const res = await this.hass.callWS({
+      type: "expense_tracker/categories/list",
+    });
+    if (res) this._categories = res.categories || [];
+  }
+
+  async _settleDebt(item) {
+    this._loading = true;
+    try {
+      await this.hass.callService("expense_tracker", "settle_debt", {
+        from_user_id: item.from_id,
+        to_user_id: item.to_id,
+        amount: item.amount,
+      });
       await this._loadAll();
-    } else {
-      alert("Failed to record settlement");
+    } catch (e) {
+      console.error(e);
+      alert(this._localize("Failed to add expense"));
     }
     this._loading = false;
   }
 
   async _submitExpense() {
-    const { amount, category, description, date, is_shared } = this._formData;
-    if (!amount || Number(amount) <= 0) {
-      alert("Please enter a valid amount");
+    const { amount, category, description, is_shared } = this._formData;
+    if (!amount || isNaN(amount) || Number(amount) <= 0) {
+      alert(this._localize("Please enter a valid amount"));
       return;
     }
 
     this._loading = true;
-    const res = await this._ws("expense_tracker/expenses/add", {
+    const res = await this.hass.callWS({
+      type: "expense_tracker/expenses/add",
       amount: Number(amount),
       category,
       description,
-      date,
-      is_shared,
+      is_shared: !!is_shared,
     });
 
     if (res) {
@@ -150,7 +174,7 @@ class ExpenseTrackerCard extends LitElement {
       this._showAddForm = false;
       await this._loadAll();
     } else {
-      alert("Failed to add expense");
+      alert(this._localize("Failed to add expense"));
     }
     this._loading = false;
   }
@@ -160,7 +184,7 @@ class ExpenseTrackerCard extends LitElement {
       return html`
         <ha-card class="loading-card">
           <div style="display: flex; justify-content: center; align-items: center; min-height: 100px;">
-            Loading...
+            ${this._localize("Loading...")}
           </div>
         </ha-card>
       `;
@@ -182,7 +206,7 @@ class ExpenseTrackerCard extends LitElement {
         <div class="card-header-container">
           <div class="card-header-title">
             <ha-icon icon="mdi:scale-balance"></ha-icon>
-            <span>Expenses Balance</span>
+            <span>${this._localize("Expenses Balance")}</span>
           </div>
           <button class="add-btn-icon" @click=${() => this._showAddForm = true}>
             <ha-icon icon="mdi:plus"></ha-icon>
@@ -213,22 +237,22 @@ class ExpenseTrackerCard extends LitElement {
                   })}
                 </div>
               `
-            : html`<p class="empty-state">No balances to display.</p>`}
+            : html`<p class="empty-state">${this._localize("No balances to display.")}</p>`}
 
           <!-- Suggested Settlements -->
           ${settlements.length > 0
             ? html`
-                <div class="settlements-header">Suggested Settlements</div>
+                <div class="settlements-header">${this._localize("Suggested Settlements")}</div>
                 <div class="settlements-list">
                   ${settlements.map(
                     (item) => html`
                       <div class="settlement-card">
                         <div class="settlement-text">
-                          <strong>${item.from_name}</strong> owes <strong>${item.to_name}</strong>
+                          <strong>${item.from_name}</strong> ${this._localize("owes")} <strong>${item.to_name}</strong>
                         </div>
                         <div class="settlement-action">
                           <span class="amount">${formatCurrency(item.amount, sym)}</span>
-                          <button class="settle-btn" @click=${() => this._settleDebt(item)}>Settle</button>
+                          <button class="settle-btn" @click=${() => this._settleDebt(item)}>${this._localize("Settle")}</button>
                         </div>
                       </div>
                     `
@@ -247,7 +271,7 @@ class ExpenseTrackerCard extends LitElement {
         <div class="card-header-container">
           <div class="card-header-title">
             <ha-icon icon="mdi:receipt-plus-outline"></ha-icon>
-            <span>Quick Add Expense</span>
+            <span>${this._localize("Quick Add Expense")}</span>
           </div>
           <button class="add-btn-icon" @click=${() => this._showAddForm = false}>
             <ha-icon icon="mdi:close"></ha-icon>
@@ -255,7 +279,7 @@ class ExpenseTrackerCard extends LitElement {
         </div>
         <div class="card-content">
           <div class="form-group">
-            <label>Amount (${sym})</label>
+            <label>${this._localize("Amount")} (${sym})</label>
             <input
               type="number"
               step="0.01"
@@ -266,17 +290,17 @@ class ExpenseTrackerCard extends LitElement {
             />
           </div>
           <div class="form-group">
-            <label>Category</label>
+            <label>${this._localize("Category")}</label>
             <select
               .value=${this._formData.category}
               @change=${(e) => { this._formData = { ...this._formData, category: e.target.value }; }}
               class="text-input"
             >
-              ${this._categories.map((c) => html`<option value=${c}>${c}</option>`)}
+              ${this._categories.map((c) => html`<option value=${c}>${this._localize(c)}</option>`)}
             </select>
           </div>
           <div class="form-group">
-            <label>Description</label>
+            <label>${this._localize("Description")}</label>
             <input
               type="text"
               .value=${this._formData.description}
@@ -293,11 +317,11 @@ class ExpenseTrackerCard extends LitElement {
                 .checked=${this._formData.is_shared}
                 @change=${(e) => { this._formData = { ...this._formData, is_shared: e.target.checked }; }}
               />
-              <label for="is_shared_cb">Shared with Household</label>
+              <label for="is_shared_cb">${this._localize("Shared with Household")}</label>
             </div>
           </div>
           <div class="form-actions">
-            <button class="save-btn" @click=${this._submitExpense}>Save</button>
+            <button class="save-btn" @click=${this._submitExpense}>${this._localize("Save")}</button>
           </div>
         </div>
       </ha-card>
