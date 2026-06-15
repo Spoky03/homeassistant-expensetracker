@@ -2,142 +2,193 @@
  * Expense Tracker Card — Home Assistant Lovelace Custom Card
  * Displays outstanding balances, settlements, and a quick-add form on the dashboard.
  */
+
 import { LitElement, html, css } from "./shared/lit.js";
 import { formatCurrency } from "./shared/format.js";
-import { makeT, categoryKey, } from "./shared/i18n.js";
+import {
+  makeT,
+  categoryKey,
+  type TranslationFn,
+} from "./shared/i18n.js";
+import type { HomeAssistant } from "custom-card-helpers";
+import type {
+  Expense,
+  Summary,
+  Settlement,
+} from "../../../types/expense-tracker";
+
+interface FormData {
+  amount: string;
+  category: string;
+  description: string;
+  date: string;
+  is_shared: boolean;
+}
+
+interface CardConfig {
+  // Reserved for future config options; card currently has none.
+  [key: string]: unknown;
+}
+
+interface CustomCardRegistration {
+  type: string;
+  name: string;
+  description?: string;
+}
+
+declare global {
+  interface Window {
+    customCards?: CustomCardRegistration[];
+  }
+}
+
 class ExpenseTrackerCard extends LitElement {
-    static get properties() {
-        return {
-            hass: { type: Object },
-            _config: { type: Object },
-            _summary: { type: Object },
-            _loading: { type: Boolean },
-            _showAddForm: { type: Boolean },
-            _formData: { type: Object },
-            _categories: { type: Array },
-        };
-    }
-    constructor() {
-        super();
-        this.hass = null;
-        this._summary = null;
-        this._loading = true;
-        this._showAddForm = false;
-        this._formData = this._defaultFormData();
-        this._categories = [];
-        this._t = makeT(null);
-        this._initLoaded = false;
-    }
-    _defaultFormData() {
-        return {
-            amount: "",
-            category: "Food",
-            description: "",
-            date: new Date().toISOString().slice(0, 10),
-            is_shared: true,
-        };
-    }
-    setConfig(config) {
-        this._config = config;
-    }
-    getCardSize() {
-        return 3;
-    }
-    updated(changedProperties) {
-        super.updated(changedProperties);
-        if (changedProperties.has("hass") && this.hass) {
-            this._t = makeT(this.hass);
-            if (!this._initLoaded) {
-                this._initLoaded = true;
-                this._loadAll();
-            }
-            else {
-                const oldHass = changedProperties.get("hass");
-                const oldState = oldHass?.states?.["sensor.expense_tracker_monthly_total"]?.state;
-                const newState = this.hass.states?.["sensor.expense_tracker_monthly_total"]?.state;
-                if (oldState !== newState && newState !== undefined) {
-                    this._loadAll();
-                }
-            }
-        }
-    }
-    connectedCallback() {
-        super.connectedCallback();
+  static override get properties() {
+    return {
+      hass: { type: Object },
+      _config: { type: Object },
+      _summary: { type: Object },
+      _loading: { type: Boolean },
+      _showAddForm: { type: Boolean },
+      _formData: { type: Object },
+      _categories: { type: Array },
+    };
+  }
+
+  hass: HomeAssistant | null = null;
+  private _config!: CardConfig;
+  private _summary: Summary | null = null;
+  private _loading = true;
+  private _showAddForm = false;
+  private _formData: FormData = this._defaultFormData();
+  private _categories: string[] = [];
+  private _t: TranslationFn = makeT(null);
+  private _initLoaded = false;
+
+  constructor() {
+    super();
+  }
+
+  private _defaultFormData(): FormData {
+    return {
+      amount: "",
+      category: "Food",
+      description: "",
+      date: new Date().toISOString().slice(0, 10),
+      is_shared: true,
+    };
+  }
+
+  setConfig(config: CardConfig): void {
+    this._config = config;
+  }
+
+  getCardSize(): number {
+    return 3;
+  }
+
+  override updated(changedProperties: Map<string, unknown>): void {
+    super.updated(changedProperties);
+    if (changedProperties.has("hass") && this.hass) {
+      this._t = makeT(this.hass);
+      if (!this._initLoaded) {
         this._initLoaded = true;
         this._loadAll();
-    }
-    async _loadAll() {
-        this._loading = true;
-        const store = this.hass?.states?.["sensor.expense_tracker_monthly_total"];
-        if (store) {
-            await Promise.all([this._loadSummary(), this._loadCategories()]);
+      } else {
+        const oldHass = changedProperties.get("hass") as
+          | HomeAssistant
+          | undefined;
+        const oldState =
+          oldHass?.states?.["sensor.expense_tracker_monthly_total"]?.state;
+        const newState =
+          this.hass.states?.["sensor.expense_tracker_monthly_total"]?.state;
+        if (oldState !== newState && newState !== undefined) {
+          this._loadAll();
         }
-        this._loading = false;
+      }
     }
-    async _loadSummary() {
-        if (!this.hass)
-            return;
-        const res = await this.hass.callWS({
-            type: "expense_tracker/summary",
-        });
-        if (res)
-            this._summary = res;
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this._initLoaded = true;
+    this._loadAll();
+  }
+
+  private async _loadAll(): Promise<void> {
+    this._loading = true;
+    const store = this.hass?.states?.["sensor.expense_tracker_monthly_total"];
+    if (store) {
+      await Promise.all([this._loadSummary(), this._loadCategories()]);
     }
-    async _loadCategories() {
-        if (!this.hass)
-            return;
-        const res = await this.hass.callWS({
-            type: "expense_tracker/categories/list",
-        });
-        if (res)
-            this._categories = res.categories || [];
+    this._loading = false;
+  }
+
+  private async _loadSummary(): Promise<void> {
+    if (!this.hass) return;
+    const res = await this.hass.callWS<Summary>({
+      type: "expense_tracker/summary",
+    });
+    if (res) this._summary = res;
+  }
+
+  private async _loadCategories(): Promise<void> {
+    if (!this.hass) return;
+    const res = await this.hass.callWS<{ categories: string[] }>({
+      type: "expense_tracker/categories/list",
+    });
+    if (res) this._categories = res.categories || [];
+  }
+
+  private async _settleDebt(item: Settlement): Promise<void> {
+    this._loading = true;
+    try {
+      await this.hass!.callService("expense_tracker", "settle_debt", {
+        from_user_id: item.from_id,
+        to_user_id: item.to_id,
+        amount: item.amount,
+      });
+      await this._loadAll();
+    } catch (e) {
+      console.error(e);
+      alert(this._t("notify_settlement_failed"));
     }
-    async _settleDebt(item) {
-        this._loading = true;
-        try {
-            await this.hass.callService("expense_tracker", "settle_debt", {
-                from_user_id: item.from_id,
-                to_user_id: item.to_id,
-                amount: item.amount,
-            });
-            await this._loadAll();
-        }
-        catch (e) {
-            console.error(e);
-            alert(this._t("notify_settlement_failed"));
-        }
-        this._loading = false;
+    this._loading = false;
+  }
+
+  private async _submitExpense(): Promise<void> {
+    const { amount, category, description, is_shared } = this._formData;
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      alert(this._t("notify_invalid_amount"));
+      return;
     }
-    async _submitExpense() {
-        const { amount, category, description, is_shared } = this._formData;
-        if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-            alert(this._t("notify_invalid_amount"));
-            return;
-        }
-        this._loading = true;
-        const res = await this.hass.callWS({
-            type: "expense_tracker/expenses/add",
-            amount: Number(amount),
-            category,
-            description,
-            is_shared: !!is_shared,
-        });
-        if (res) {
-            this._formData = this._defaultFormData();
-            this._showAddForm = false;
-            await this._loadAll();
-        }
-        else {
-            alert(this._t("notify_add_failed"));
-        }
-        this._loading = false;
+
+    this._loading = true;
+    const res = await this.hass!.callWS<{ expense: Expense }>({
+      type: "expense_tracker/expenses/add",
+      amount: Number(amount),
+      category,
+      description,
+      is_shared: !!is_shared,
+    });
+
+    if (res) {
+      this._formData = this._defaultFormData();
+      this._showAddForm = false;
+      await this._loadAll();
+    } else {
+      alert(this._t("notify_add_failed"));
     }
-    _cat(name) {
-        return this._t(categoryKey(name));
-    }
-    render() {
-        if (this._loading && !this._summary) {
-            return html `
+    this._loading = false;
+  }
+
+  private _cat(name: string): string {
+    return this._t(categoryKey(name));
+  }
+
+  override render(): unknown {
+    if (this._loading && !this._summary) {
+      return html`
         <ha-card class="loading-card">
           <div
             style="display: flex; justify-content: center; align-items: center; min-height: 100px;"
@@ -146,17 +197,20 @@ class ExpenseTrackerCard extends LitElement {
           </div>
         </ha-card>
       `;
-        }
-        const s = this._summary ?? {};
-        const sym = s.currency ?? "€";
-        const balances = s.balances ?? {};
-        const settlements = s.settlements ?? [];
-        const byUser = s.by_user ?? {};
-        const entries = Object.entries(balances);
-        if (this._showAddForm) {
-            return this._renderAddForm(sym);
-        }
-        return html `
+    }
+
+    const s = this._summary ?? ({} as Partial<Summary>);
+    const sym = s.currency ?? "€";
+    const balances = s.balances ?? {};
+    const settlements = s.settlements ?? [];
+    const byUser = s.by_user ?? {};
+    const entries = Object.entries(balances);
+
+    if (this._showAddForm) {
+      return this._renderAddForm(sym);
+    }
+
+    return html`
       <ha-card>
         <div class="card-header-container">
           <div class="card-header-title">
@@ -172,22 +226,22 @@ class ExpenseTrackerCard extends LitElement {
         </div>
         <div class="card-content">
           ${entries.length > 0
-            ? html `
+            ? html`
                 <div class="balances-list">
                   ${entries.map(([uid, balance]) => {
-                const userName = byUser[uid]?.name || "Unknown";
-                const isOwed = balance > 0;
-                const isOwer = balance < 0;
-                return html `
+                    const userName = byUser[uid]?.name || "Unknown";
+                    const isOwed = balance > 0;
+                    const isOwer = balance < 0;
+                    return html`
                       <div class="balance-item">
                         <div class="user-info">
                           <div
                             class="avatar"
                             style="background: ${isOwed
-                    ? "linear-gradient(135deg, #10b981, #059669)"
-                    : isOwer
-                        ? "linear-gradient(135deg, #ef4444, #dc2626)"
-                        : "linear-gradient(135deg, #6b7280, #4b5563)"}"
+                              ? "linear-gradient(135deg, #10b981, #059669)"
+                              : isOwer
+                                ? "linear-gradient(135deg, #ef4444, #dc2626)"
+                                : "linear-gradient(135deg, #6b7280, #4b5563)"}"
                           >
                             ${(userName[0] || "?").toUpperCase()}
                           </div>
@@ -195,27 +249,28 @@ class ExpenseTrackerCard extends LitElement {
                         </div>
                         <span
                           class="value ${isOwed
-                    ? "owed"
-                    : isOwer
-                        ? "ower"
-                        : "settled"}"
+                            ? "owed"
+                            : isOwer
+                              ? "ower"
+                              : "settled"}"
                         >
                           ${isOwed ? "+" : ""}${formatCurrency(balance, sym)}
                         </span>
                       </div>
                     `;
-            })}
+                  })}
                 </div>
               `
-            : html `<p class="empty-state">${this._t("set_no_balances")}</p>`}
+            : html`<p class="empty-state">${this._t("set_no_balances")}</p>`}
 
           ${settlements.length > 0
-            ? html `
+            ? html`
                 <div class="settlements-header">
                   ${this._t("set_suggested")}
                 </div>
                 <div class="settlements-list">
-                  ${settlements.map((item) => html `
+                  ${settlements.map(
+                    (item) => html`
                       <div class="settlement-card">
                         <div class="settlement-text">
                           <strong>${item.from_name}</strong>
@@ -234,16 +289,18 @@ class ExpenseTrackerCard extends LitElement {
                           </button>
                         </div>
                       </div>
-                    `)}
+                    `
+                  )}
                 </div>
               `
             : ""}
         </div>
       </ha-card>
     `;
-    }
-    _renderAddForm(sym) {
-        return html `
+  }
+
+  private _renderAddForm(sym: string): unknown {
+    return html`
       <ha-card>
         <div class="card-header-container">
           <div class="card-header-title">
@@ -264,10 +321,10 @@ class ExpenseTrackerCard extends LitElement {
               type="number"
               step="0.01"
               .value=${this._formData.amount}
-              @input=${(e) => {
-            const target = e.target;
-            this._formData = { ...this._formData, amount: target.value };
-        }}
+              @input=${(e: Event) => {
+                const target = e.target as HTMLInputElement;
+                this._formData = { ...this._formData, amount: target.value };
+              }}
               class="text-input"
               placeholder="0.00"
             />
@@ -276,13 +333,15 @@ class ExpenseTrackerCard extends LitElement {
             <label>${this._t("form_category")}</label>
             <select
               .value=${this._formData.category}
-              @change=${(e) => {
-            const target = e.target;
-            this._formData = { ...this._formData, category: target.value };
-        }}
+              @change=${(e: Event) => {
+                const target = e.target as HTMLSelectElement;
+                this._formData = { ...this._formData, category: target.value };
+              }}
               class="text-input"
             >
-              ${this._categories.map((c) => html `<option value=${c}>${this._cat(c)}</option>`)}
+              ${this._categories.map(
+                (c) => html`<option value=${c}>${this._cat(c)}</option>`
+              )}
             </select>
           </div>
           <div class="form-group">
@@ -290,10 +349,10 @@ class ExpenseTrackerCard extends LitElement {
             <input
               type="text"
               .value=${this._formData.description}
-              @input=${(e) => {
-            const target = e.target;
-            this._formData = { ...this._formData, description: target.value };
-        }}
+              @input=${(e: Event) => {
+                const target = e.target as HTMLInputElement;
+                this._formData = { ...this._formData, description: target.value };
+              }}
               class="text-input"
               placeholder="e.g., Grocery"
             />
@@ -304,10 +363,10 @@ class ExpenseTrackerCard extends LitElement {
                 type="checkbox"
                 id="is_shared_cb"
                 .checked=${this._formData.is_shared}
-                @change=${(e) => {
-            const target = e.target;
-            this._formData = { ...this._formData, is_shared: target.checked };
-        }}
+                @change=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  this._formData = { ...this._formData, is_shared: target.checked };
+                }}
               />
               <label for="is_shared_cb"
                 >${this._t("form_shared_household")}</label
@@ -322,9 +381,10 @@ class ExpenseTrackerCard extends LitElement {
         </div>
       </ha-card>
     `;
-    }
-    static get styles() {
-        return css `
+  }
+
+  static override get styles() {
+    return css`
       :host {
         display: block;
       }
@@ -504,16 +564,21 @@ class ExpenseTrackerCard extends LitElement {
         font-style: italic;
       }
     `;
-    }
+  }
 }
+
 customElements.define("expense-tracker-card", ExpenseTrackerCard);
+
 // Register custom card type in customCards global config for Lovelace picker
 window.customCards = window.customCards || [];
-const cardExists = window.customCards.some((card) => card.type === "expense-tracker-card");
+const cardExists = window.customCards.some(
+  (card) => card.type === "expense-tracker-card"
+);
 if (!cardExists) {
-    window.customCards.push({
-        type: "expense-tracker-card",
-        name: "Expense Tracker Card",
-        description: "Displays household balances, suggested settlements, and a quick-add expense form.",
-    });
+  window.customCards.push({
+    type: "expense-tracker-card",
+    name: "Expense Tracker Card",
+    description:
+      "Displays household balances, suggested settlements, and a quick-add expense form.",
+  });
 }

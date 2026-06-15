@@ -5,8 +5,10 @@
  * style sheet can be edited independently. The literal content of the
  * template is unchanged.
  */
-import { css } from "./lit.js";
-export const panelStyles = css `
+
+import { css, type CSSResult } from "./lit.js";
+
+export const panelStyles: CSSResult = css`
       :host {
         display: block;
         height: 100%;
