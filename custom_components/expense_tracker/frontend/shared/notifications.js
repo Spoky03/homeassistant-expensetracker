@@ -10,7 +10,7 @@
  *   this._notifier = createNotifier();
  *   this._notifier.show(
  *     (v) => { this._notification = v; },
- *     "expense_added",
+ *     "notify_expense_added",
  *     "success",
  *     this._t,
  *   );

@@ -104,7 +104,7 @@ class ExpenseTrackerCard extends LitElement {
         }
         catch (e) {
             console.error(e);
-            alert(this._t("notify_add_failed"));
+            alert(this._t("notify_settlement_failed"));
         }
         this._loading = false;
     }
