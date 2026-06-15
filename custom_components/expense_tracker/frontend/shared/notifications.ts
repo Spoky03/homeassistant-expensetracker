@@ -42,7 +42,7 @@ export interface Notifier {
     setter: NotificationSetter,
     key: string,
     type: NotificationType,
-    t: (key: any) => string,
+    t: NotifierTranslator,
     durationMs?: number
   ): void;
   dispose(): void;
