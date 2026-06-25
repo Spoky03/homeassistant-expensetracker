@@ -38,6 +38,7 @@ class ExpenseTrackerStore:
                 "settings": {
                     "currency": self._default_currency,
                     "categories": list(DEFAULT_CATEGORIES),
+                    "budgets": {},
                 },
             }
             await self._async_save()
@@ -244,17 +245,15 @@ class ExpenseTrackerStore:
 
         # Budget info
         budgets: dict[str, Any] = {}
-        if user_id:
-            user_data = self._data.get("users", {}).get(user_id, {})
-            raw_budgets = user_data.get("budgets", {})
-            for cat, budget_amount in raw_budgets.items():
-                spent = by_category.get(cat, 0.0)
-                budgets[cat] = {
-                    "budget": budget_amount,
-                    "spent": spent,
-                    "remaining": round(budget_amount - spent, 2),
-                    "percentage": round((spent / budget_amount) * 100, 1) if budget_amount > 0 else 0,
-                }
+        raw_budgets = self.get_budgets()
+        for cat, budget_amount in raw_budgets.items():
+            spent = by_category.get(cat, 0.0)
+            budgets[cat] = {
+                "budget": budget_amount,
+                "spent": spent,
+                "remaining": round(budget_amount - spent, 2),
+                "percentage": round((spent / budget_amount) * 100, 1) if budget_amount > 0 else 0,
+            }
 
         # Calculate household balances & settlements (all-time)
         all_expenses = self.get_expenses(user_id=None, month=None, include_shared=True)
@@ -382,17 +381,37 @@ class ExpenseTrackerStore:
     async def async_set_budget(
         self, user_id: str, user_name: str, category: str, amount: float
     ) -> None:
-        """Set a monthly budget for a category."""
-        user = self._ensure_user(user_id, user_name)
+        """Set a shared household monthly budget for a category."""
+        # Keep user ensured for compatibility with existing data/users list.
+        self._ensure_user(user_id, user_name)
+        settings = self._data.setdefault("settings", {})
+        budgets = settings.setdefault("budgets", {})
         if amount <= 0:
-            user["budgets"].pop(category, None)
+            budgets.pop(category, None)
         else:
-            user["budgets"][category] = round(float(amount), 2)
+            budgets[category] = round(float(amount), 2)
         await self._async_save()
 
-    def get_budgets(self, user_id: str) -> dict[str, float]:
-        """Get all budgets for a user."""
-        return self._data.get("users", {}).get(user_id, {}).get("budgets", {})
+    def get_budgets(self, user_id: str | None = None) -> dict[str, float]:
+        """Get shared household budgets.
+
+        `user_id` is accepted for backward compatibility with old call sites.
+        """
+        settings = self._data.get("settings", {})
+        shared_budgets = settings.get("budgets")
+        if isinstance(shared_budgets, dict):
+            return shared_budgets
+
+        # Migration fallback for old per-user data: merge all user budgets.
+        merged: dict[str, float] = {}
+        for user_data in self._data.get("users", {}).values():
+            user_budgets = user_data.get("budgets", {})
+            for cat, amount in user_budgets.items():
+                try:
+                    merged[cat] = round(float(amount), 2)
+                except (TypeError, ValueError):
+                    continue
+        return merged
 
     # ──────────────────────────────────────────────
     # Categories
