@@ -606,58 +606,29 @@ class ExpenseTrackerPanel extends LitElement {
     total: number,
     sym: string
   ): unknown {
-    const size = 200;
-    const cx = size / 2;
-    const cy = size / 2;
-    const r = 70;
-    const strokeWidth = 28;
-    const circumference = 2 * Math.PI * r;
-
-    let accumulated = 0;
-    const arcs = categories.map(([cat, amount]) => {
-      const pct = total > 0 ? amount / total : 0;
-      const offset = accumulated;
-      accumulated += pct;
-      return { cat, amount, pct, offset };
-    });
+    let start = 0;
+    const conicSegments = categories
+      .map(([cat, amount]) => {
+        const pct = total > 0 ? (amount / total) * 100 : 0;
+        const end = start + pct;
+        const segment = `${getCategoryColor(cat)} ${start.toFixed(2)}% ${end.toFixed(2)}%`;
+        start = end;
+        return segment;
+      })
+      .join(", ");
+    const donutStyle =
+      conicSegments.length > 0
+        ? `background: conic-gradient(${conicSegments});`
+        : "background: var(--divider, rgba(255,255,255,0.12));";
 
     return html`
       <div class="donut-container">
-        <svg viewBox="0 0 ${size} ${size}" class="donut-svg">
-          ${arcs.map(
-            (arc) => html`
-              <circle
-                cx="${cx}"
-                cy="${cy}"
-                r="${r}"
-                fill="none"
-                stroke="${getCategoryColor(arc.cat)}"
-                stroke-width="${strokeWidth}"
-                stroke-dasharray="${arc.pct * circumference} ${circumference}"
-                stroke-dashoffset="${-arc.offset * circumference}"
-                stroke-linecap="round"
-                class="donut-segment"
-                transform="rotate(-90 ${cx} ${cy})"
-              />
-            `
-          )}
-          <text
-            x="${cx}"
-            y="${cy - 8}"
-            text-anchor="middle"
-            class="donut-total-label"
-          >
-            ${this._t("dash_total")}
-          </text>
-          <text
-            x="${cx}"
-            y="${cy + 14}"
-            text-anchor="middle"
-            class="donut-total-value"
-          >
-            ${formatCurrency(total, sym)}
-          </text>
-        </svg>
+        <div class="donut-visual" style="${donutStyle}">
+          <div class="donut-hole">
+            <span class="donut-total-label">${this._t("dash_total")}</span>
+            <span class="donut-total-value">${formatCurrency(total, sym)}</span>
+          </div>
+        </div>
         <div class="donut-legend">
           ${categories.map(
             ([cat, amount]) => html`

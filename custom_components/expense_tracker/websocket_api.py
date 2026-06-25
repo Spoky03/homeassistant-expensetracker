@@ -209,7 +209,8 @@ def ws_get_summary(
 ) -> None:
     """Handle getting monthly summary."""
     store = _get_store(hass)
-    user_id = msg.get("user_id") or connection.user.id
+    # Default to household-wide summary unless user_id is explicitly requested.
+    user_id = msg.get("user_id")
 
     summary = store.get_monthly_summary(user_id=user_id, month=msg.get("month"))
     connection.send_result(msg["id"], summary)
@@ -347,8 +348,7 @@ def ws_get_budgets(
 ) -> None:
     """Handle getting budgets."""
     store = _get_store(hass)
-    user = connection.user
-    budgets = store.get_budgets(user.id)
+    budgets = store.get_budgets()
     connection.send_result(msg["id"], {"budgets": budgets})
 
 

@@ -304,25 +304,35 @@ export const panelStyles: CSSResult = css`
         flex-wrap: wrap;
       }
 
-      .donut-svg {
+      .donut-visual {
         width: 200px;
         height: 200px;
         flex-shrink: 0;
+        border-radius: 50%;
+        position: relative;
       }
 
-      .donut-segment {
-        transition: stroke-dasharray 0.6s ease;
+      .donut-hole {
+        position: absolute;
+        inset: 28px;
+        border-radius: 50%;
+        background: var(--card-bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
       }
 
       .donut-total-label {
         font-size: 11px;
-        fill: var(--text-secondary);
+        color: var(--text-secondary);
         font-weight: 500;
       }
 
       .donut-total-value {
         font-size: 16px;
-        fill: var(--text-primary);
+        color: var(--text-primary);
         font-weight: 800;
       }
 
